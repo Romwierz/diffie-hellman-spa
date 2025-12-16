@@ -77,6 +77,11 @@ class Group:
                 return b
         raise ValueError(f"No inverse of {a} in set {self._G}!")
 
+    def check_inverse(self):
+        for a in self._G:
+            inv = self.inverse(a)
+            print(f"{a}^-1 =", inv, " check:", self.op(a, inv))
+
 def mul_mod_p(a, b, p=7):
     return (a * b) % p
 
@@ -87,9 +92,7 @@ def main():
     print("e =", group.identity())
     print("|G| =", group.order())
 
-    for a in G:
-        inv = group.inverse(a)
-        print(f"{a}^-1 =", inv, " check:", group.op(a, inv))
+    group.check_inverse()
 
 if __name__=="__main__":
     main()
