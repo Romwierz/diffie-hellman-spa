@@ -33,11 +33,9 @@ main:
     mov     m_hi, #00h
     lcall   montgomery_mul16
 
-    mov     R0, #0FFh
-    mov     R1, #0FFh
-    mov     R2, #01h
-    mov     R3, #00h
-    lcall   add16
+    mov     R0, #01h
+    mov     R1, #81h
+    lcall   shiftright16
 
     jmp     $
 
@@ -100,6 +98,23 @@ shiftleft16:
     mov A, R1
     rlc A
     mov R1, A
+
+    ret
+
+;-----------------------------------------
+; shift right 16-bit value
+; in:   R1:R0 = a_hi:a_lo
+; out:  R1:R0 = (a_hi:a_lo) >> 1
+;-----------------------------------------
+shiftright16:
+    clr     C ; clear carry flag so it is not rotated into the bit7 of msb
+    mov     A, R1
+    rrc     A
+    mov     R1, A
+
+    mov     A, R0
+    rrc     A
+    mov     R0, A
 
     ret
 
