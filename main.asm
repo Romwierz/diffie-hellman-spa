@@ -109,23 +109,26 @@ add16:
 
 ;-----------------------------------------
 ; subtract 16-bit values
-; (R5:R4) + B = (R1:R0) - (R3:R2)
+; A - B = C
+; in:   R1:R0 = a_hi:a_lo
+;       R3:R2 = b_hi:b_lo
+; out:  R5:R4 = c_hi:c_lo + Carry (borrow) flag
 ;-----------------------------------------
 sub16:
-    ; expected result: (R5:R4) == 00FFh + 1
-    mov R0, #0FEh
-    mov R1, #0FFh
-    mov R2, #0FFh
-    mov R3, #0FFh
+    clr     C
+    mov     A, R0
+    subb    A, R2
+    mov     R4, A
 
-    clr C
-    mov A, R1
-    subb A, R3
-    mov R5, A
+    mov     A, R1
+    subb    A, R3
+    mov     R5, A
 
-    mov A, R0
-    subb A, R2
-    mov R4, A
+    mov     A, R0
+    subb    A, R2
+    mov     R4, A
+
+    ret
 
     ret
 
@@ -147,9 +150,9 @@ shiftleft16:
 ; ---------------------------------------------------------
 ; ---------------------------------------------------------
 ; cmp16_ge
-; in : R1:R0 = a_hi:a_lo
-;      R3:R2 = b_hi:b_lo
-; out: A = 1 if a >= b, 0 if a < b
+; in:   R1:R0 = a_hi:a_lo
+;       R3:R2 = b_hi:b_lo
+; out:  A = 1 if a >= b, 0 if a < b
 ; ---------------------------------------------------------
 cmp16_ge:
     push    0
@@ -192,8 +195,8 @@ cmp16_ge:
     
 ; ---------------------------------------------------------
 ; get_bit_cnt16
-; in : m_lo, m_hi
-; out: A = number of bits (MSB index + 1)
+; in:   m_lo, m_hi
+; out:  A = number of bits (MSB index + 1)
 ; ---------------------------------------------------------
 get_bit_cnt16:
     push 7
