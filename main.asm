@@ -148,6 +148,66 @@ shiftleft16:
     ret
 
 ; ---------------------------------------------------------
+; uint16 montgomery_mul(uint16 A, uint16 B, uint16 M)
+; in:   A_lo:A_hi }
+;       B_lo:B_hi } RAM addresses
+;       M_lo:M_hi }
+; out:  result_lo:result_hi = (A * B * R⁻¹ mod M) in Montgomery's representation
+; ---------------------------------------------------------
+montgomery_mul16:
+    ; initialize result with 0
+    mov     result_lo, #0
+    mov     result_hi, #0
+
+    ; get bit count of modulus into R7
+    lcall   get_bit_cnt16
+    mov     R7, A
+
+    mont_loop:
+
+    ; if (A & 1) result += B
+    ; -----------------------
+    mov     A, a_lo
+    anl     A, #01h
+    jz      skip_add_b
+    ; result += B
+
+    skip_add_b:
+
+    ; if (result & 1) result += M
+    ; ----------------------------
+    mov     A, result_lo
+    anl     A, #01h
+    jz      skip_add_m
+
+    ;result += M
+
+    skip_add_m:
+
+    ; result >>= 1
+    ; -------------
+
+    ; A >>= 1
+    ; --------
+
+    djnz    R7, mont_loop
+
+    ; if result >= M then result -= M
+    ; -------------------------------
+    mov     R0, result_lo
+    mov     R1, result_hi
+    mov     R2, m_lo
+    mov     R3, m_hi
+    lcall   cmp16_ge
+    jz      montgomery_mul16_done
+
+    lcall   sub16 ; final result in in R5:R4
+    mov     result_lo, R4
+    mov     result_hi, R5
+
+    montgomery_mul16_done:
+    ret
+
 ; ---------------------------------------------------------
 ; cmp16_ge
 ; in:   R1:R0 = a_hi:a_lo
