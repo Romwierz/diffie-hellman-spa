@@ -19,9 +19,10 @@
     m_hi        EQU 25h
     result_lo   EQU 26h
     result_hi   EQU 27h
+    result_ext  EQU 28h ; for bits b17 and b16 of the result
 
     ; variable to use in cmp_ge16 subroutine
-    cmp_var     EQU 28h
+    cmp_var     EQU 29h
 
 main:
     lcall   init_LCD
@@ -122,15 +123,30 @@ shiftright16:
 
 ; ---------------------------------------------------------
 ; uint16 montgomery_mul(uint16 A, uint16 B, uint16 M)
-; in:   A_lo:A_hi }
+; In:   A_lo:A_hi }
 ;       B_lo:B_hi } RAM addresses
 ;       M_lo:M_hi }
-; out:  result_lo:result_hi = (A * B * R⁻¹ mod M) in Montgomery's representation
+; Out:  result_lo:result_hi = (A * B * R⁻¹ mod M) in Montgomery's space
+;-----------------------------------------
+; Important note:
+; During Montgomery multiplication the intermediate "result"
+; may exceed 16 bits due to additions:
+;   result += B and result += M.
+;
+; result_ext stores carry-out bits beyond bit15 (bits 16 and 17),
+; preserving full intermediate precision.
+;
+; Before each right shift of result_hi:result_lo, result_ext is also shifted and because of the fact,
+; that LSB bit is shifted into Carry, a correct logical (n+1)-bit shift is ensured.
+;
+; Without result_ext, MSBs would be lost and the algorithm
+; would produce incorrect results.
 ; ---------------------------------------------------------
 montgomery_mul16:
     ; initialize result with 0
     mov     result_lo, #0
     mov     result_hi, #0
+    mov     result_ext, #0
 
     ; get bit count of modulus into R7
     lcall   get_bit_cnt16
@@ -144,6 +160,16 @@ montgomery_mul16:
     anl     A, #01h
     jz      skip_add_b
     ; result += B
+    mov     R0, result_lo
+    mov     R1, result_hi
+    mov     R2, b_lo
+    mov     R3, b_hi
+    lcall   add16
+    mov     result_lo, R4
+    mov     result_hi, R5
+    jnc     no_carry1
+    inc     result_ext
+    no_carry1:
 
     skip_add_b:
 
@@ -154,15 +180,42 @@ montgomery_mul16:
     jz      skip_add_m
 
     ;result += M
+    mov     R0, result_lo
+    mov     R1, result_hi
+    mov     R2, m_lo
+    mov     R3, m_hi
+    lcall   add16
+    mov     result_lo, R4
+    mov     result_hi, R5
+    jnc     no_carry2
+    inc     result_ext
+    no_carry2:
 
     skip_add_m:
 
     ; result >>= 1
     ; -------------
+    mov     R0, result_lo
+    mov     R1, result_hi
+    ; shift bit17 into bit16 and bit16 into result_hi
+    clr     C
+    mov     A, result_ext
+    rrc     A
+    mov     result_ext, A
+    lcall   shiftright16
+    mov     result_lo, R0
+    mov     result_hi, R1
 
     ; A >>= 1
     ; --------
+    clr     C
+    mov     R0, a_lo
+    mov     R1, a_hi
+    lcall   shiftright16
+    mov     a_lo, R0
+    mov     a_hi, R1
 
+    clr     C ; clear Carry after each iteration
     djnz    R7, mont_loop
 
     ; if result >= M then result -= M
