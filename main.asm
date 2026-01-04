@@ -24,6 +24,11 @@
     ; variable to use in cmp_ge16 subroutine
     cmp_var     EQU 29h
 
+    ; variables to use in mod32_16
+    rem_lo      EQU 30h
+    rem_hi      EQU 31h
+    rem_ext     EQU 32h
+
     ; variables to use in shiftleft16
     sl_lo       EQU 33h
     sl_hi       EQU 34h
@@ -35,29 +40,77 @@ main:
     mov     A, R4
     lcall   dispACC_LCD
 
-    mov     R1, #01h
-    mov     R2, #0F1h
-    mov     R3, #31h
-    mov     R4, #0C5h
+    ; test case 1
+    ; -----------
+    ; 4 mod 3 = 1
+    ; -----------
+    mov     R1, #04h
+    mov     R2, #00h
+    mov     R3, #00h
+    mov     R4, #00h
+    mov     m_lo, #03h
+    mov     m_hi, #00h
+    lcall   mod32_16
 
-    mov     A, #0
-    lcall   get_bit32
-    mov     A, #2
-    lcall   get_bit32
-    mov     A, #8
-    lcall   get_bit32
-    mov     A, #11
-    lcall   get_bit32
-    mov     A, #15
-    lcall   get_bit32
-    mov     A, #16
-    lcall   get_bit32
-    mov     A, #28
-    lcall   get_bit32
-    mov     A, #31
-    lcall   get_bit32
-    mov     A, #33
-    lcall   get_bit32
+    ; test case 2
+    ; -----------
+    ; 65536 mod 3 = 1
+    ; -----------
+    mov     R1, #00h
+    mov     R2, #00h
+    mov     R3, #01h
+    mov     R4, #00h
+    mov     m_lo, #03h
+    mov     m_hi, #00h
+    lcall   mod32_16
+
+    ; test case 3
+    ; -----------
+    ; 0x12345678 mod 0x1234 = 0x0DA8 = 3496
+    ; -----------
+    mov     R1, #78h
+    mov     R2, #56h
+    mov     R3, #34h
+    mov     R4, #12h
+    mov     m_lo, #34h
+    mov     m_hi, #12h
+    lcall   mod32_16
+
+    ; test case 4
+    ; -----------
+    ; 0x89ABCDEF mod 256 (0x0100) = LSB → 0xEF
+    ; -----------
+    mov     R1, #0EFh
+    mov     R2, #0CDh
+    mov     R3, #0ABh
+    mov     R4, #89h
+    mov     m_lo, #00h
+    mov     m_hi, #01h
+    lcall   mod32_16
+
+    ; test case 5
+    ; -----------
+    ; 0xFFFFFFFF mod 0xFFFF = 0x0000
+    ; -----------
+    mov     R1, #0FFh
+    mov     R2, #0FFh
+    mov     R3, #0FFh
+    mov     R4, #0FFh
+    mov     m_lo, #0FFh
+    mov     m_hi, #0FFh
+    lcall   mod32_16
+
+    ; test case 6
+    ; -----------
+    ; 196609 mod 3 = 1
+    ; -----------
+    mov     R1, #01h
+    mov     R2, #00h
+    mov     R3, #03h
+    mov     R4, #00h
+    mov     m_lo, #03h
+    mov     m_hi, #00h
+    lcall   mod32_16
 
     jmp     $
 
@@ -100,11 +153,95 @@ sub16:
 
     ret
 
-    subb    A, R2
-    mov     R4, A
+;-----------------------------------------
+; Calculate modulo M (16-bit value) of a 32-bit value A.
+; A mod M = Remainder
+; In:   R4:R3:R2:R1 = a_3:a_2:a_1:a_0
+;       m_hi:m_lo
+; Out:  rem_hi:rem_lo
+;-----------------------------------------
+mod32_16:
+    push    0
 
-    ret
+    ; initialize remainder with 0
+    mov     rem_lo, #0
+    mov     rem_hi, #0
+    mov     rem_ext, #0
 
+    mov     R7, #32 ; iterate over every bit of dividend
+
+    mod_loop:
+    ; remainder <<= 1
+    ; -----------------------
+    mov     sl_lo, rem_lo
+    mov     sl_hi, rem_hi
+    lcall   shiftleft16
+    mov     rem_lo, sl_lo
+    mov     rem_hi, sl_hi
+    mov     A, rem_ext
+    rlc     A
+    mov     rem_ext, A
+
+    ; remainder_lo |= get_bit(dividend, bit)
+    ; -----------------------
+    mov     A, R7
+    dec     A
+    lcall   get_bit32 ; bit value is stored in A
+    orl     A, rem_lo
+    mov     rem_lo, A
+
+    ; if remainder >= M then remainder -= M
+    ; -----------------------
+    mov     A, rem_ext
+    anl     A, #01h
+    jnz     sub_m
+
+    push 0
+    push 1
+    push 2
+    push 3
+
+    mov     R0, rem_lo
+    mov     R1, rem_hi
+    mov     R2, m_lo
+    mov     R3, m_hi
+    lcall   cmp16_ge
+
+    pop 3
+    pop 2
+    pop 1
+    pop 0
+
+    jz      skip_sub_m
+
+    sub_m:
+    push 0
+    push 1
+    push 2
+    push 3
+    push 4
+    push 5
+
+    mov     R0, rem_lo
+    mov     R1, rem_hi
+    mov     R2, m_lo
+    mov     R3, m_hi
+    lcall   sub16 ; final result in in R5:R4
+    mov     rem_lo, R4
+    mov     rem_hi, R5
+    mov     rem_ext, #0
+
+    pop 5
+    pop 4
+    pop 3
+    pop 2
+    pop 1
+    pop 0
+
+    skip_sub_m:
+    djnz    R7, mod_loop
+
+    pop     0
     ret
 
 ;-----------------------------------------
