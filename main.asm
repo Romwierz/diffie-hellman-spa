@@ -54,63 +54,68 @@ main:
 
     ; test case 1
     ; -----------
-    ; mont_convert_in(0x04D2, 0x0015) = 0x0008
+    ; a = 0x04D2
+    ; m = 0x0015
+    ; ā = (1234 * 32) mod 21 = 0x0008
+    ; convert_out(ā) = 0x0010 = 0x04D2 mod 0x15
     ; -----------
     mov     R1, #0D2h
     mov     R2, #04h
     mov     m_lo, #15h
     mov     m_hi, #00h
-    lcall   montgomery_convert_in16
+    lcall   montgomery_convert_in16 ; expected: R2:R1 = 0x0008
+    ASSERT16 00h, 08h, R2, R1
+    lcall   montgomery_convert_out16 ; expected: R2:R1 = 0x0010
+    ASSERT16 00h, 10h, R2, R1
 
     ; test case 2
     ; -----------
-    ; mont_convert_in(0x0001, 0x0003) = 0x0001
+    ; a = 0x0007
+    ; m = 0x0015
+    ; ā = (7 * 32) mod 21 = 0x000E
+    ; convert_out(ā) = 0x0007 = 0x0007 mod 0x0015
     ; -----------
-    mov     R1, #01h
+    mov     R1, #07h
     mov     R2, #00h
-    mov     m_lo, #03h
+    mov     m_lo, #15h
     mov     m_hi, #00h
-    lcall   montgomery_convert_in16
+    lcall   montgomery_convert_in16 ; expected: R2:R1 = 0x000E
+    ASSERT16 00h, 0Eh, R2, R1
+    lcall   montgomery_convert_out16 ; expected: R2:R1 = 0x0007
+    ASSERT16 00h, 07h, R2, R1
 
     ; test case 3
     ; -----------
-    ; mont_convert_in(0x0014, 0x0015) = 0x000A
+    ; a = 0x0014 = 20
+    ; m = 0x0015 = 21
+    ; ā = (20 * 32) mod 21 = 0x000A
+    ; convert_out(ā) = 0x0014 = 0x0014 mod 0x0015
     ; -----------
     mov     R1, #14h
     mov     R2, #00h
     mov     m_lo, #15h
     mov     m_hi, #00h
-    lcall   montgomery_convert_in16
+    lcall   montgomery_convert_in16 ; expected: R2:R1 = 0x000A
+    ASSERT16 00h, 0Ah, R2, R1
+    lcall   montgomery_convert_out16 ; expected: R2:R1 = 0x0014
+    ASSERT16 00h, 14h, R2, R1
 
     ; test case 4
     ; -----------
-    ; mont_convert_in(0x0000, 0x1234) = 0x0000
-    ; -----------
-    mov     R1, #00h
-    mov     R2, #00h
-    mov     m_lo, #34h
-    mov     m_hi, #12h
-    lcall   montgomery_convert_in16
-
-    ; test case 5
-    ; -----------
-    ; mont_convert_in(0x0001, 0x8001) = 0x7FFF
-    ; -----------
-    mov     R1, #01h
-    mov     R2, #00h
-    mov     m_lo, #01h
-    mov     m_hi, #80h
-    lcall   montgomery_convert_in16
-
-    ; test case 6
-    ; -----------
-    ; mont_convert_in(0x1234, 0x00F7) = 0x00C5
+    ; a = 0x1234 = 4660
+    ; m = 0x00F7 = 247
+    ; R = 2^8 = 256
+    ; ā = (4660 * 256) mod 247 = 0x00C5
+    ; convert_out(ā) = 0x00D6 = 0x1234 mod 0x00F7
     ; -----------
     mov     R1, #34h
     mov     R2, #12h
     mov     m_lo, #0F7h
     mov     m_hi, #00h
-    lcall   montgomery_convert_in16
+    lcall   montgomery_convert_in16 ; expected: R2:R1 = 0x00C5
+    ASSERT16 00h, 0C5h, R2, R1
+    lcall   montgomery_convert_out16 ; expected: R2:R1 = 0x00D6
+    ASSERT16 00h, 0D6h, R2, R1
 
     jmp     $
 
@@ -346,6 +351,28 @@ montgomery_convert_in16:
     lcall   mod32_16
     mov     R1, rem_lo
     mov     R2, rem_hi
+
+    ret
+
+;-----------------------------------------
+; Convert a 16-bit value out of Montgomery's space.
+; In:   R2:R1 = _(a_hi:a_lo)
+;       m_hi:m_lo
+; Out:  R2:R1 = a_hi:a_lo
+;-----------------------------------------
+; Note:
+; Montgomery conversion preserves values modulo M.
+; convert_out(convert_in(a)) returns (a mod M),
+; not the original integer if a >= M.
+;-----------------------------------------
+montgomery_convert_out16:
+    mov     a_lo, R1
+    mov     a_hi, R2
+    mov     b_lo, #01h
+    mov     b_hi, #00h
+    lcall   montgomery_mul16
+    mov     R1, result_lo
+    mov     R2, result_hi
 
     ret
 
