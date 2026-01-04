@@ -3,6 +3,14 @@
 ; The program below actually starts at the address 8500h because lower memory region
 ; is also used by the interrupt vectors.
 
+    ASSERT16 MACRO exp_hi, exp_lo, reg_hi, reg_lo
+        inc     R7
+        mov     A, reg_lo
+        cjne    A, #exp_lo, ASSERT_FAIL
+        mov     A, reg_hi
+        cjne    A, #exp_hi, ASSERT_FAIL
+    ENDM
+
     ; display.LIB code starts from adress 9800h and uses 40h-4ah memory region of RAM
     EXTRN code(init_LCD,LCD_XY,zapisz_string_LCD,dispACC_LCD)
 
@@ -40,6 +48,9 @@ main:
 
     mov     A, R4
     lcall   dispACC_LCD
+
+    ; initialize ASSERT counter
+    mov     R7, #0
 
     ; test case 1
     ; -----------
@@ -102,6 +113,9 @@ main:
     lcall   montgomery_convert_in16
 
     jmp     $
+
+ASSERT_FAIL:
+    sjmp ASSERT_FAIL
 
 ;-----------------------------------------
 ; add 16-bit values
