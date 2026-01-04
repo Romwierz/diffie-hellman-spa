@@ -30,77 +30,33 @@ main:
     mov     A, R4
     lcall   dispACC_LCD
 
-    ; test values 1
-    ; -------------
-    ; M = 0x0065 = 101
-    ; n = 7 -> R = 128
-    ; a = 45
-    ; b = 89
-    ; ā = (a * R) mod M = 0x0003 = 3
-    ; b̄ = (b * R) mod M = 0x0050 = 80
-    ; expected result: 0x0041 = 65
-    ; -------------------------------
-    mov     m_lo, #65h ; 101
-    mov     m_hi, #00h
-    mov     a_lo, #03h ; ā = 3
-    mov     a_hi, #00h
-    mov     b_lo, #50h ; b̄ = 80
-    mov     b_hi, #00h
-    lcall   montgomery_mul16
+    mov     A, #0F0h
+    mov     R0, #1
+    lcall   shiftright_x_times
 
-    ; test values 2
-    ; -------------
-    ; M = 0xC365 = 50021
-    ; n = 16 -> R = 65536
-    ; a = 13900
-    ; b = 7234
-    ; ā = (a * R) mod M = 0x4631 = 17969
-    ; b̄ = (b * R) mod M = 0x9607 = 38407
-    ; expected result: 0x81A4= 33188
-    ; -------------------------------
-    mov     m_lo, #65h ; 50021
-    mov     m_hi, #0C3h
-    mov     a_lo, #31h ; ā = 17969
-    mov     a_hi, #46h
-    mov     b_lo, #07h ; b̄ = 38407
-    mov     b_hi, #96h
-    lcall   montgomery_mul16
+    mov     A, #0F0h
+    mov     R0, #0
+    lcall   shiftright_x_times
 
-    ; test values 3
-    ; -------------
-    ; M = 0xB6E7 = 46823
-    ; n = 16 -> R = 65536
-    ; a = 0x1234 = 4660
-    ; b = 0xABCD = 43981
-    ; ā = (a * R) mod M = 0x46EA = 18154
-    ; b̄ = (b * R) mod M = 0x2186 = 8582
-    ; expected result: 0x149E = 5278
-    ; -------------------------------
-    mov     m_lo, #0E7h
-    mov     m_hi, #0B6h
-    mov     a_lo, #0EAh
-    mov     a_hi, #46h
-    mov     b_lo, #86h
-    mov     b_hi, #21h
-    lcall   montgomery_mul16
+    mov     A, #0F0h
+    mov     R0, #2
+    lcall   shiftright_x_times
 
-    ; test values 4
-    ; -------------
-    ; M = 0xFFFB = 65531
-    ; n = 16 -> R = 65536
-    ; a = 0x8001 = 32769
-    ; b = 0x7FFF = 32767
-    ; ā = (a * R) mod M = 0x800F = 32783
-    ; b̄ = (b * R) mod M = 0x8005 = 32773
-    ; expected result: 0x4019 = 16409
-    ; -------------------------------
-    mov     m_lo, #0FBh
-    mov     m_hi, #0FFh
-    mov     a_lo, #0Fh
-    mov     a_hi, #80h
-    mov     b_lo, #05h
-    mov     b_hi, #80h
-    lcall   montgomery_mul16
+    mov     A, #0F0h
+    mov     R0, #18
+    lcall   shiftright_x_times
+
+    mov     A, #0F0h
+    mov     R0, #5
+    lcall   shiftright_x_times
+
+    mov     A, #00h
+    mov     R0, #0
+    lcall   shiftright_x_times
+
+    mov     A, #00h
+    mov     R0, #5
+    lcall   shiftright_x_times
 
     jmp     $
 
@@ -172,7 +128,7 @@ shiftleft16:
 ; out:  R1:R0 = (a_hi:a_lo) >> 1
 ;-----------------------------------------
 ; important note:
-; if needed, carry flag must explicitly cleared before shifting operation
+; if needed, carry flag must be explicitly cleared before shifting operation
 ;-----------------------------------------
 shiftright16:
     mov     A, R1
@@ -182,6 +138,32 @@ shiftright16:
     mov     A, R0
     rrc     A
     mov     R0, A
+
+    ret
+
+;-----------------------------------------
+; shift right x times
+; in:   A
+;       R0 = x
+; out:  A = A >> x
+;-----------------------------------------
+shiftright_x_times:
+    push    0
+
+    xch     A, R0
+    jz      shiftright_0_times
+    xch     A, R0
+
+    shift_loop:
+    clr     C
+    rrc     A
+    djnz    R0, shift_loop
+
+    xch     A, R0
+    shiftright_0_times:
+    xch     A, R0
+
+    pop 0
 
     ret
 
