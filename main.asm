@@ -24,6 +24,11 @@
     ; variable to use in cmp_ge16 subroutine
     cmp_var     EQU 29h
 
+    ; variables to use in shiftleft16
+    sl_lo       EQU 33h
+    sl_hi       EQU 34h
+    sl_ext      EQU 35h
+
 main:
     lcall   init_LCD
 
@@ -103,18 +108,19 @@ sub16:
     ret
 
 ;-----------------------------------------
-; shift left 16-bit value
-; (R1:R0) = (R1:R0) << 1
+; Shift left 16-bit value.
+; In:   sl_hi:sl_lo
+; Out:  sl_hi:sl_lo = sl_hi:sl_lo << 1
 ;-----------------------------------------
 shiftleft16:
     clr C ; clear carry flag so it is not rotated into the bit0 of lsb
-    mov A, R0
+    mov A, sl_lo
     rlc A
-    mov R0, A
+    mov sl_lo, A
 
-    mov A, R1
+    mov A, sl_hi
     rlc A
-    mov R1, A
+    mov sl_hi, A
 
     ret
 
