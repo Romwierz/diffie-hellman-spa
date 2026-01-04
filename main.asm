@@ -43,75 +43,63 @@ main:
 
     ; test case 1
     ; -----------
-    ; 4 mod 3 = 1
+    ; mont_convert_in(0x04D2, 0x0015) = 0x0008
     ; -----------
-    mov     R1, #04h
-    mov     R2, #00h
-    mov     R3, #00h
-    mov     R4, #00h
-    mov     m_lo, #03h
+    mov     R1, #0D2h
+    mov     R2, #04h
+    mov     m_lo, #15h
     mov     m_hi, #00h
-    lcall   mod32_16
+    lcall   montgomery_convert_in16
 
     ; test case 2
     ; -----------
-    ; 65536 mod 3 = 1
-    ; -----------
-    mov     R1, #00h
-    mov     R2, #00h
-    mov     R3, #01h
-    mov     R4, #00h
-    mov     m_lo, #03h
-    mov     m_hi, #00h
-    lcall   mod32_16
-
-    ; test case 3
-    ; -----------
-    ; 0x12345678 mod 0x1234 = 0x0DA8 = 3496
-    ; -----------
-    mov     R1, #78h
-    mov     R2, #56h
-    mov     R3, #34h
-    mov     R4, #12h
-    mov     m_lo, #34h
-    mov     m_hi, #12h
-    lcall   mod32_16
-
-    ; test case 4
-    ; -----------
-    ; 0x89ABCDEF mod 256 (0x0100) = LSB → 0xEF
-    ; -----------
-    mov     R1, #0EFh
-    mov     R2, #0CDh
-    mov     R3, #0ABh
-    mov     R4, #89h
-    mov     m_lo, #00h
-    mov     m_hi, #01h
-    lcall   mod32_16
-
-    ; test case 5
-    ; -----------
-    ; 0xFFFFFFFF mod 0xFFFF = 0x0000
-    ; -----------
-    mov     R1, #0FFh
-    mov     R2, #0FFh
-    mov     R3, #0FFh
-    mov     R4, #0FFh
-    mov     m_lo, #0FFh
-    mov     m_hi, #0FFh
-    lcall   mod32_16
-
-    ; test case 6
-    ; -----------
-    ; 196609 mod 3 = 1
+    ; mont_convert_in(0x0001, 0x0003) = 0x0001
     ; -----------
     mov     R1, #01h
     mov     R2, #00h
-    mov     R3, #03h
-    mov     R4, #00h
     mov     m_lo, #03h
     mov     m_hi, #00h
-    lcall   mod32_16
+    lcall   montgomery_convert_in16
+
+    ; test case 3
+    ; -----------
+    ; mont_convert_in(0x0014, 0x0015) = 0x000A
+    ; -----------
+    mov     R1, #14h
+    mov     R2, #00h
+    mov     m_lo, #15h
+    mov     m_hi, #00h
+    lcall   montgomery_convert_in16
+
+    ; test case 4
+    ; -----------
+    ; mont_convert_in(0x0000, 0x1234) = 0x0000
+    ; -----------
+    mov     R1, #00h
+    mov     R2, #00h
+    mov     m_lo, #34h
+    mov     m_hi, #12h
+    lcall   montgomery_convert_in16
+
+    ; test case 5
+    ; -----------
+    ; mont_convert_in(0x0001, 0x8001) = 0x7FFF
+    ; -----------
+    mov     R1, #01h
+    mov     R2, #00h
+    mov     m_lo, #01h
+    mov     m_hi, #80h
+    lcall   montgomery_convert_in16
+
+    ; test case 6
+    ; -----------
+    ; mont_convert_in(0x1234, 0x00F7) = 0x00C5
+    ; -----------
+    mov     R1, #34h
+    mov     R2, #12h
+    mov     m_lo, #0F7h
+    mov     m_hi, #00h
+    lcall   montgomery_convert_in16
 
     jmp     $
 
@@ -310,6 +298,40 @@ shiftright_x_times:
     xch     A, R0
 
     pop 0
+
+    ret
+
+;-----------------------------------------
+; Convert a 16-bit value into Montgomery's space.
+; A * R mod M, where R = 2^k and k - n_bits of M
+; In:   R4:R3:R2:R1 = 0:0:a_hi:a_lo
+;       m_hi:m_lo
+; Out:  R2:R1 = _(a_hi:a_lo)
+;-----------------------------------------
+montgomery_convert_in16:
+    ; get bit count of modulus into R7
+    lcall   get_bit_cnt16
+    mov     R7, A
+
+    mov     R3, #0
+    mov     R4, #0
+
+    shift_loop_mont:
+    mov     sl_0, R1
+    mov     sl_1, R2
+    mov     sl_2, R3
+    mov     sl_3, R4
+    lcall   shiftleft32
+    mov     R1, sl_0
+    mov     R2, sl_1
+    mov     R3, sl_2
+    mov     R4, sl_3
+
+    djnz    R7, shift_loop_mont
+
+    lcall   mod32_16
+    mov     R1, rem_lo
+    mov     R2, rem_hi
 
     ret
 
