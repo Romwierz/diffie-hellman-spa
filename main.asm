@@ -29,10 +29,11 @@
     rem_hi      EQU 31h
     rem_ext     EQU 32h
 
-    ; variables to use in shiftleft16
-    sl_lo       EQU 33h
-    sl_hi       EQU 34h
-    sl_ext      EQU 35h
+    ; variables to use in shiftleft32
+    sl_0        EQU 33h
+    sl_1        EQU 34h
+    sl_2        EQU 35h
+    sl_3        EQU 36h
 
 main:
     lcall   init_LCD
@@ -173,14 +174,12 @@ mod32_16:
     mod_loop:
     ; remainder <<= 1
     ; -----------------------
-    mov     sl_lo, rem_lo
-    mov     sl_hi, rem_hi
-    lcall   shiftleft16
-    mov     rem_lo, sl_lo
-    mov     rem_hi, sl_hi
-    mov     A, rem_ext
-    rlc     A
-    mov     rem_ext, A
+    mov     sl_0, rem_lo
+    mov     sl_1, rem_hi
+    lcall   shiftleft32
+    mov     rem_lo, sl_0
+    mov     rem_hi, sl_1
+    mov     rem_ext, sl_2
 
     ; remainder_lo |= get_bit(dividend, bit)
     ; -----------------------
@@ -245,19 +244,27 @@ mod32_16:
     ret
 
 ;-----------------------------------------
-; Shift left 16-bit value.
-; In:   sl_hi:sl_lo
-; Out:  sl_hi:sl_lo = sl_hi:sl_lo << 1
+; Shift left 32-bit value.
+; In:   sl_3:sl_2:sl_1:sl_0
+; Out:  sl_3:sl_2sl_1:sl_0 = sl_3:sl_2sl_1:sl_0 << 1
 ;-----------------------------------------
-shiftleft16:
+shiftleft32:
     clr C ; clear carry flag so it is not rotated into the bit0 of lsb
-    mov A, sl_lo
+    mov A, sl_0
     rlc A
-    mov sl_lo, A
+    mov sl_0, A
 
-    mov A, sl_hi
+    mov A, sl_1
     rlc A
-    mov sl_hi, A
+    mov sl_1, A
+
+    mov A, sl_2
+    rlc A
+    mov sl_2, A
+
+    mov A, sl_3
+    rlc A
+    mov sl_3, A
 
     ret
 
