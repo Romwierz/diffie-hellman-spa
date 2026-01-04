@@ -30,33 +30,29 @@ main:
     mov     A, R4
     lcall   dispACC_LCD
 
-    mov     A, #0F0h
-    mov     R0, #1
-    lcall   shiftright_x_times
+    mov     R1, #01h
+    mov     R2, #0F1h
+    mov     R3, #31h
+    mov     R4, #0C5h
 
-    mov     A, #0F0h
-    mov     R0, #0
-    lcall   shiftright_x_times
-
-    mov     A, #0F0h
-    mov     R0, #2
-    lcall   shiftright_x_times
-
-    mov     A, #0F0h
-    mov     R0, #18
-    lcall   shiftright_x_times
-
-    mov     A, #0F0h
-    mov     R0, #5
-    lcall   shiftright_x_times
-
-    mov     A, #00h
-    mov     R0, #0
-    lcall   shiftright_x_times
-
-    mov     A, #00h
-    mov     R0, #5
-    lcall   shiftright_x_times
+    mov     A, #0
+    lcall   get_bit32
+    mov     A, #2
+    lcall   get_bit32
+    mov     A, #8
+    lcall   get_bit32
+    mov     A, #11
+    lcall   get_bit32
+    mov     A, #15
+    lcall   get_bit32
+    mov     A, #16
+    lcall   get_bit32
+    mov     A, #28
+    lcall   get_bit32
+    mov     A, #31
+    lcall   get_bit32
+    mov     A, #33
+    lcall   get_bit32
 
     jmp     $
 
@@ -368,6 +364,48 @@ get_bit_cnt16:
     get_bit_cnt16_done:
     mov     A, R7
     pop     7
+    ret
+
+; ---------------------------------------------------------
+; Get the value of the bit on given index of a 32-bit value.
+; In:   A = bit index (0..31)
+;       R4:R3:R2:R1 = 32-bit value
+; Out:  A = 0 or 1
+; ---------------------------------------------------------
+; Warning:
+; It is not checked if index exceeds 31 value.
+; ---------------------------------------------------------
+get_bit32:
+    push    0
+
+    ; if A > 31 return 0
+    ; ------------------------
+    ; mov     R0, A
+    ; anl     A, #0C0h
+    ; jz      index_in_range
+    ; mov     A, #0
+    ; pop     0
+    ; ret
+
+    index_in_range:
+    ; mov     A, R0
+    ; divide the index by 8 to get the byte index (quotient in A)
+    ; and relative bit index (remainder in B)
+    mov     B, #8
+    div     AB
+
+    ; (a[byte_i] >> bit_i) & 1
+    ; ------------------------
+    add     A, #1 ; byte0 is under R1 so base must be adjusted by adding 1 (in case of reg bank 0)
+    mov     R0, A
+    mov     A, @R0 ; it is assumed that register bank 0 is used
+    mov     R0, B
+    lcall   shiftright_x_times
+
+    anl     A, #1
+
+    pop     0
+
     ret
 
 END
