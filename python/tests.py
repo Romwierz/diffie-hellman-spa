@@ -11,5 +11,26 @@ class TestDiv(unittest.TestCase):
     def test_montpro(self):
         self.assertEqual(mont_pro(0x0008, 0x001a, 0x0033), 0x0010)
 
+    def test_modexp_1(self):
+        self.assertEqual(mod_exp(34, 3, 49), 6)
+
+    def test_modexp_exp_zero(self):
+        self.assertEqual(mod_exp(17, 0, 31), 1)
+
+    def test_modexp_a_one(self):
+        self.assertEqual(mod_exp(1, 123, 97), 1)
+
+    def test_modexp_a_ge_m(self):
+        self.assertEqual(mod_exp(100, 5, 37), 10)
+
+    def test_modexp_medium(self):
+        self.assertEqual(mod_exp(7, 13, 33), 13)
+
+    def test_modexp_larger_exp(self):
+        self.assertEqual(mod_exp(5, 117, 19), 1)
+
+    def test_modexp_crypto_style(self):
+        self.assertEqual(mod_exp(17, 23, 97), 7)
+
 if __name__ == "__main__":
     unittest.main()
