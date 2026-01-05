@@ -56,70 +56,100 @@ main:
     ; initialize ASSERT counter
     mov     ass_cnt, #0
 
+    ; ---------------------------------------------------------
     ; test case 1
-    ; -----------
-    ; a = 0x04D2
-    ; m = 0x0015
-    ; ā = (1234 * 32) mod 21 = 0x0008
-    ; convert_out(ā) = 0x0010 = 0x04D2 mod 0x15
-    ; -----------
+    ; ---------------------------------------------------------
+    ; A = 0x0004
+    ; B = 0x0005
+    ; M = 0x0015 = 21
+    ;
+    ; expected:
+    ; U = (4 * 5) mod 21 = 20 = 0x0014
+    ; ---------------------------------------------------------
+    mov     R1, #04h
+    mov     R2, #00h
+    mov     R3, #05h
+    mov     R4, #00h
+    mov     m_lo, #15h
+    mov     m_hi, #00h
+    lcall   montgomery_mul16
+    ASSERT16 00h, 14h, R6, R5
+
+    ; ---------------------------------------------------------
+    ; test case 2
+    ; ---------------------------------------------------------
+    ; A = 0x001F = 31
+    ; B = 0x0002
+    ; M = 0x004B = 75
+    ;
+    ; expected:
+    ; U = (31 * 2) mod 75 = 62 = 0x003E
+    ; ---------------------------------------------------------
+    mov     R1, #1Fh
+    mov     R2, #00h
+    mov     R3, #02h
+    mov     R4, #00h
+    mov     m_lo, #4Bh
+    mov     m_hi, #00h
+    lcall   montgomery_mul16
+    ASSERT16 00h, 3Eh, R6, R5
+
+    ; ---------------------------------------------------------
+    ; test case 3
+    ; ---------------------------------------------------------
+    ; A = 0x04D2 = 1234
+    ; B = 0x0003
+    ; M = 0x0015 = 21
+    ;
+    ; expected:
+    ; U = (1234 * 3) mod 21 = 3702 mod 21 = 6 = 0x0006
+    ; ---------------------------------------------------------
     mov     R1, #0D2h
     mov     R2, #04h
+    mov     R3, #03h
+    mov     R4, #00h
     mov     m_lo, #15h
     mov     m_hi, #00h
-    lcall   montgomery_convert_in16 ; expected: R2:R1 = 0x0008
-    ASSERT16 00h, 08h, R2, R1
-    lcall   montgomery_convert_out16 ; expected: R2:R1 = 0x0010
-    ASSERT16 00h, 10h, R2, R1
+    lcall   montgomery_mul16
+    ASSERT16 00h, 06h, R6, R5
 
-    ; test case 2
-    ; -----------
-    ; a = 0x0007
-    ; m = 0x0015
-    ; ā = (7 * 32) mod 21 = 0x000E
-    ; convert_out(ā) = 0x0007 = 0x0007 mod 0x0015
-    ; -----------
-    mov     R1, #07h
-    mov     R2, #00h
-    mov     m_lo, #15h
-    mov     m_hi, #00h
-    lcall   montgomery_convert_in16 ; expected: R2:R1 = 0x000E
-    ASSERT16 00h, 0Eh, R2, R1
-    lcall   montgomery_convert_out16 ; expected: R2:R1 = 0x0007
-    ASSERT16 00h, 07h, R2, R1
-
-    ; test case 3
-    ; -----------
-    ; a = 0x0014 = 20
-    ; m = 0x0015 = 21
-    ; ā = (20 * 32) mod 21 = 0x000A
-    ; convert_out(ā) = 0x0014 = 0x0014 mod 0x0015
-    ; -----------
-    mov     R1, #14h
-    mov     R2, #00h
-    mov     m_lo, #15h
-    mov     m_hi, #00h
-    lcall   montgomery_convert_in16 ; expected: R2:R1 = 0x000A
-    ASSERT16 00h, 0Ah, R2, R1
-    lcall   montgomery_convert_out16 ; expected: R2:R1 = 0x0014
-    ASSERT16 00h, 14h, R2, R1
-
+    ; ---------------------------------------------------------
     ; test case 4
-    ; -----------
-    ; a = 0x1234 = 4660
-    ; m = 0x00F7 = 247
-    ; R = 2^8 = 256
-    ; ā = (4660 * 256) mod 247 = 0x00C5
-    ; convert_out(ā) = 0x00D6 = 0x1234 mod 0x00F7
-    ; -----------
-    mov     R1, #34h
-    mov     R2, #12h
+    ; ---------------------------------------------------------
+    ; A = 0x0001
+    ; B = 0x0001
+    ; M = 0x00F7 = 247
+    ;
+    ; expected:
+    ; U = (1 * 1) mod 247 = 1 = 0x0001
+    ; ---------------------------------------------------------
+    mov     R1, #01h
+    mov     R2, #00h
+    mov     R3, #01h
+    mov     R4, #00h
     mov     m_lo, #0F7h
     mov     m_hi, #00h
-    lcall   montgomery_convert_in16 ; expected: R2:R1 = 0x00C5
-    ASSERT16 00h, 0C5h, R2, R1
-    lcall   montgomery_convert_out16 ; expected: R2:R1 = 0x00D6
-    ASSERT16 00h, 0D6h, R2, R1
+    lcall   montgomery_mul16
+    ASSERT16 00h, 01h, R6, R5
+
+    ; ---------------------------------------------------------
+    ; test case 5
+    ; ---------------------------------------------------------
+    ; A = 0x0000
+    ; B = 0x1234 = 4660
+    ; M = 0x0015 = 21
+    ;
+    ; expected:
+    ; U = (0 * 4660) mod 21 = 0 = 0x0000
+    ; ---------------------------------------------------------
+    mov     R1, #00h
+    mov     R2, #00h
+    mov     R3, #34h
+    mov     R4, #12h
+    mov     m_lo, #15h
+    mov     m_hi, #00h
+    lcall   montgomery_mul16
+    ASSERT16 00h, 00h, R6, R5
 
     jmp     $
 
@@ -498,6 +528,70 @@ montgomery_pro16:
     mov     result_hi, R5
 
     montgomery_pro16_done:
+    ret
+
+; ---------------------------------------------------------
+; Calculate the product of two 16-bit numbers modulo M using Montgomery reduction algorithm.
+;
+; U = A * B (mod M)
+;
+; In:   R2:R1 = a_hi:a_lo
+;       R4:R3 = b_hi:b_lo
+;       m_hi:m_lo
+; Out:  R6:R5 = u_hi:u_lo
+;-----------------------------------------
+; Important note:
+; The Montgomery reduction algorithm requires that R and M be relatively prime,
+; i.e., gcd(R, M) = gcd(2^k, M) = 1. This requirement is satisfied if n is odd.
+;-----------------------------------------
+montgomery_mul16:
+    ; convert A into Montgomery representation -> R2:R1 = _A
+    push    3
+    push    4
+    lcall   montgomery_convert_in16
+    pop     4
+    pop     3
+
+    ; convert B into Montgomery representation -> R4:R3 = _B
+    push    1
+    push    2
+    mov     A, R3
+    mov     R1, A
+    mov     A, R4
+    mov     R2, A
+    push    3
+    push    4
+    lcall   montgomery_convert_in16
+    pop     4
+    pop     3
+    mov     A, R1
+    mov     R3, A
+    mov     A, R2
+    mov     R4, A
+    pop     2
+    pop     1
+
+    ; _U = MonPro(_A,_B)
+    mov     a_lo, R1
+    mov     a_hi, R2
+    mov     b_lo, R3
+    mov     b_hi, R4
+    lcall   montgomery_pro16
+
+    ; _U -> U
+    ; convert _U out of Montgomery representation -> R6:R5 = U
+    push    1
+    push    2
+    mov     R1, result_lo
+    mov     R2, result_hi
+    lcall   montgomery_convert_out16
+    mov     A, R1
+    mov     R5, A
+    mov     A, R2
+    mov     R6, A
+    pop     2
+    pop     1
+
     ret
 
 ; ---------------------------------------------------------
