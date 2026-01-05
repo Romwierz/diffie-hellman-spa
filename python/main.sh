@@ -2,8 +2,8 @@
 
 case "$1" in
     (unittest)
-        echo "> python3 -m unittest"
-        python3 -m unittest -v
+        echo "> python3 -m unittest discover -s python"
+        python3 -m unittest discover -s python
         ;;
     (*)
         echo "> python3 -m python.main"
