@@ -363,7 +363,13 @@ shiftright_x_times:
 ;-----------------------------------------
 montgomery_convert_in16:
     ; get bit count of modulus into R7
+    push    1
+    push    2
+    mov     R1, m_lo
+    mov     R2, m_hi
     lcall   get_bit_cnt16
+    pop     2
+    pop     1
     mov     R7, A
 
     mov     R3, #0
@@ -445,7 +451,13 @@ montgomery_pro16:
     mov     result_ext, #0
 
     ; get bit count of modulus into R7
+    push    1
+    push    2
+    mov     R1, m_lo
+    mov     R2, m_hi
     lcall   get_bit_cnt16
+    pop     2
+    pop     1
     mov     R7, A
 
     mont_loop:
@@ -640,26 +652,26 @@ cmp16_ge:
     ret
     
 ; ---------------------------------------------------------
-; get_bit_cnt16
-; in:   m_lo, m_hi
-; out:  A = number of bits (MSB index + 1)
+; Get the bit count (MSB index + 1) of a 16-bit value.
+; In:   R2:R1 = a_hi:a_lo
+; Out:  A
 ; ---------------------------------------------------------
 get_bit_cnt16:
     push 7
 
     ; set initial bit count value to 0
     mov     R7, #0
-    mov     A, m_lo
-    orl     A, m_hi
+    mov     A, R1
+    orl     A, R2
     jz      get_bit_cnt16_done ; return if all bytes are zeros
 
-    ; check if m_hi != 0
-    mov     A, m_hi
+    ; check if R2 != 0
+    mov     A, R2
     jnz     msb_in_hi
 
     msb_in_lo:
     mov     R7, #9 ; max bit count is 8
-    mov     A, m_lo
+    mov     A, R1
 
     find_msb_lo:
     dec     R7
@@ -671,7 +683,7 @@ get_bit_cnt16:
 
     msb_in_hi:
     mov     R7, #17 ; max bit count is 16
-    mov     A, m_hi
+    mov     A, R2
 
     find_msb_hi:
     dec     R7
