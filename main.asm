@@ -4,7 +4,8 @@
 ; is also used by the interrupt vectors.
 
     ASSERT16 MACRO exp_hi, exp_lo, reg_hi, reg_lo
-        inc     R7
+        inc     ass_cnt
+        mov     R7, ass_cnt
         mov     A, reg_lo
         cjne    A, #exp_lo, ASSERT_FAIL
         mov     A, reg_hi
@@ -43,6 +44,9 @@
     sl_2        EQU 35h
     sl_3        EQU 36h
 
+    ; assert counter
+    ass_cnt     EQU 37h
+
 main:
     lcall   init_LCD
 
@@ -50,7 +54,7 @@ main:
     lcall   dispACC_LCD
 
     ; initialize ASSERT counter
-    mov     R7, #0
+    mov     ass_cnt, #0
 
     ; test case 1
     ; -----------
