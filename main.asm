@@ -370,25 +370,32 @@ montgomery_convert_out16:
     mov     a_hi, R2
     mov     b_lo, #01h
     mov     b_hi, #00h
-    lcall   montgomery_mul16
+    lcall   montgomery_pro16
     mov     R1, result_lo
     mov     R2, result_hi
 
     ret
 
 ; ---------------------------------------------------------
-; uint16 montgomery_mul(uint16 A, uint16 B, uint16 M)
-; In:   A_hi:A_lo }
-;       B_hi:B_lo } RAM addresses
-;       M_hi:M_lo }
-; Out:  result_hi:result_lo = (A * B * R⁻¹ mod M) in Montgomery's space
+; Calculate the Montgomery product of the M-residues of two numbers.
+;
+; _U = _A * _B * R⁻¹ (mod M)
+;
+; In:   a_hi:a_lo }
+;       b_hi:b_lo } RAM addresses
+;       m_hi:m_lo }
+; Out:  result_hi:result_lo = _U
 ;-----------------------------------------
-; Important note:
-; During Montgomery multiplication the intermediate "result"
+; Important notes:
+;
+; 1) The result is also an M-residue and thus must be converted out
+; of Montgomery space to obtain the natural value.
+;
+; 2) During Montgomery multiplication the intermediate "result"
 ; may exceed 16 bits due to additions:
 ;   result += B and result += M.
 ;
-; result_ext stores carry-out bits beyond bit15 (bits 16 and 17),
+; result_ext stores carry-out bits beyond bit15 (bits 16-17),
 ; preserving full intermediate precision.
 ;
 ; Before each right shift of result_hi:result_lo, result_ext is also shifted and because of the fact,
@@ -397,7 +404,7 @@ montgomery_convert_out16:
 ; Without result_ext, MSBs would be lost and the algorithm
 ; would produce incorrect results.
 ; ---------------------------------------------------------
-montgomery_mul16:
+montgomery_pro16:
     ; initialize result with 0
     mov     result_lo, #0
     mov     result_hi, #0
@@ -480,13 +487,13 @@ montgomery_mul16:
     mov     R2, m_lo
     mov     R3, m_hi
     lcall   cmp16_ge
-    jz      montgomery_mul16_done
+    jz      montgomery_pro16_done
 
     lcall   sub16 ; final result in in R5:R4
     mov     result_lo, R4
     mov     result_hi, R5
 
-    montgomery_mul16_done:
+    montgomery_pro16_done:
     ret
 
 ; ---------------------------------------------------------
