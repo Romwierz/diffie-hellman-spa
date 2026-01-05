@@ -445,6 +445,12 @@ montgomery_convert_out16:
 ; would produce incorrect results.
 ; ---------------------------------------------------------
 montgomery_pro16:
+    push    0
+    push    1
+    push    2
+    push    3
+    push    7
+
     ; initialize result with 0
     mov     result_lo, #0
     mov     result_hi, #0
@@ -540,6 +546,11 @@ montgomery_pro16:
     mov     result_hi, R5
 
     montgomery_pro16_done:
+    pop     7
+    pop     3
+    pop     2
+    pop     1
+    pop     0
     ret
 
 ; ---------------------------------------------------------
