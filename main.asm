@@ -4,8 +4,8 @@
 ; is also used by the interrupt vectors.
 
     ASSERT16 MACRO exp_hi, exp_lo, reg_hi, reg_lo
-        inc     ass_cnt
-        mov     R7, ass_cnt
+        inc     assert_cnt
+        mov     R7, assert_cnt
         mov     A, reg_lo
         cjne    A, #exp_lo, ASSERT_FAIL
         mov     A, reg_hi
@@ -45,7 +45,7 @@
     sl_3        EQU 36h
 
     ; assert counter
-    ass_cnt     EQU 37h
+    assert_cnt     EQU 37h
 
     ; result of mod_exp16
     x_lo        EQU 38h
@@ -58,7 +58,7 @@ main:
     lcall   dispACC_LCD
 
     ; initialize ASSERT counter
-    mov     ass_cnt, #0
+    mov     assert_cnt, #0
 
     ; ---------------------------------------------------------
     ; test case 1
@@ -472,6 +472,8 @@ montgomery_pro16:
     push    1
     push    2
     push    3
+    push    4
+    push    5
     push    7
 
     ; initialize result with 0
@@ -570,6 +572,8 @@ montgomery_pro16:
 
     montgomery_pro16_done:
     pop     7
+    pop     5
+    pop     4
     pop     3
     pop     2
     pop     1
