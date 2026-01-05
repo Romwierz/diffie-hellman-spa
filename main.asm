@@ -47,6 +47,10 @@
     ; assert counter
     ass_cnt     EQU 37h
 
+    ; result of mod_exp16
+    x_lo        EQU 38h
+    x_hi        EQU 39h
+
 main:
     lcall   init_LCD
 
@@ -59,97 +63,116 @@ main:
     ; ---------------------------------------------------------
     ; test case 1
     ; ---------------------------------------------------------
-    ; A = 0x0004
-    ; B = 0x0005
-    ; M = 0x0015 = 21
+    ; A = 0x0022 = 34
+    ; e = 0x0003 = 3
+    ; M = 0x0031 = 49
     ;
     ; expected:
-    ; U = (4 * 5) mod 21 = 20 = 0x0014
+    ; U = 34^3 mod 49 = 6
     ; ---------------------------------------------------------
-    mov     R1, #04h
+    mov     R1, #22h
     mov     R2, #00h
-    mov     R3, #05h
+    mov     R3, #03h
     mov     R4, #00h
-    mov     m_lo, #15h
+    mov     m_lo, #31h
     mov     m_hi, #00h
-    lcall   montgomery_mul16
-    ASSERT16 00h, 14h, R6, R5
+    lcall   mod_exp16
+    ASSERT16 00h, 06h, R6, R5
 
     ; ---------------------------------------------------------
     ; test case 2
     ; ---------------------------------------------------------
-    ; A = 0x001F = 31
-    ; B = 0x0002
-    ; M = 0x004B = 75
+    ; A = 0x0011 = 17
+    ; e = 0x0000 = 0
+    ; M = 0x001F = 31
     ;
     ; expected:
-    ; U = (31 * 2) mod 75 = 62 = 0x003E
+    ; U = 17^0 mod 31 = 1
     ; ---------------------------------------------------------
-    mov     R1, #1Fh
+    mov     R1, #11h
     mov     R2, #00h
-    mov     R3, #02h
+    mov     R3, #00h
     mov     R4, #00h
-    mov     m_lo, #4Bh
+    mov     m_lo, #1Fh
     mov     m_hi, #00h
-    lcall   montgomery_mul16
-    ASSERT16 00h, 3Eh, R6, R5
+    lcall   mod_exp16
+    ASSERT16 00h, 01h, R6, R5
 
     ; ---------------------------------------------------------
     ; test case 3
     ; ---------------------------------------------------------
-    ; A = 0x04D2 = 1234
-    ; B = 0x0003
-    ; M = 0x0015 = 21
+    ; A = 0x0007 = 7
+    ; e = 0x000D = 13
+    ; M = 0x0021 = 33
     ;
     ; expected:
-    ; U = (1234 * 3) mod 21 = 3702 mod 21 = 6 = 0x0006
+    ; U = 7^13 mod 33 = 13 = 0x000D
     ; ---------------------------------------------------------
-    mov     R1, #0D2h
-    mov     R2, #04h
-    mov     R3, #03h
+    mov     R1, #07h
+    mov     R2, #00h
+    mov     R3, #0Dh
     mov     R4, #00h
-    mov     m_lo, #15h
+    mov     m_lo, #21h
     mov     m_hi, #00h
-    lcall   montgomery_mul16
-    ASSERT16 00h, 06h, R6, R5
+    lcall   mod_exp16
+    ASSERT16 00h, 0Dh, R6, R5
 
     ; ---------------------------------------------------------
     ; test case 4
     ; ---------------------------------------------------------
-    ; A = 0x0001
-    ; B = 0x0001
-    ; M = 0x00F7 = 247
+    ; A = 0x0011 = 17
+    ; e = 0x0017 = 23
+    ; M = 0x0061 = 97
     ;
     ; expected:
-    ; U = (1 * 1) mod 247 = 1 = 0x0001
+    ; U = 17^23 mod 97 = 7 = 0x0007
     ; ---------------------------------------------------------
-    mov     R1, #01h
+    mov     R1, #11h
     mov     R2, #00h
-    mov     R3, #01h
+    mov     R3, #17h
     mov     R4, #00h
-    mov     m_lo, #0F7h
+    mov     m_lo, #61h
     mov     m_hi, #00h
-    lcall   montgomery_mul16
-    ASSERT16 00h, 01h, R6, R5
+    lcall   mod_exp16
+    ASSERT16 00h, 07h, R6, R5
 
     ; ---------------------------------------------------------
     ; test case 5
     ; ---------------------------------------------------------
-    ; A = 0x0000
-    ; B = 0x1234 = 4660
-    ; M = 0x0015 = 21
+    ; A = 0x0005 = 5
+    ; e = 0x0075 = 117
+    ; M = 0x0013 = 19
     ;
     ; expected:
-    ; U = (0 * 4660) mod 21 = 0 = 0x0000
+    ; U = 5^117 mod 19 = 1 = 0x0001
     ; ---------------------------------------------------------
-    mov     R1, #00h
+    mov     R1, #05h
     mov     R2, #00h
-    mov     R3, #34h
-    mov     R4, #12h
-    mov     m_lo, #15h
+    mov     R3, #75h
+    mov     R4, #00h
+    mov     m_lo, #13h
     mov     m_hi, #00h
-    lcall   montgomery_mul16
-    ASSERT16 00h, 00h, R6, R5
+    lcall   mod_exp16
+    ASSERT16 00h, 01h, R6, R5
+
+    ; ---------------------------------------------------------
+    ; test case 6
+    ; ---------------------------------------------------------
+    ; A = 0x0040 = 64
+    ; e = 0x0002 = 2
+    ; M = 0x0031 = 49
+    ;
+    ; expected:
+    ; U = 64^2 mod 49 = 29 = 0x001D
+    ; ---------------------------------------------------------
+    ; mov     R1, #40h
+    ; mov     R2, #00h
+    ; mov     R3, #02h
+    ; mov     R4, #00h
+    ; mov     m_lo, #31h
+    ; mov     m_hi, #00h
+    ; lcall   mod_exp16
+    ; ASSERT16 00h, 1Dh, R6, R5
 
     jmp     $
 
@@ -614,6 +637,116 @@ montgomery_mul16:
     mov     R6, A
     pop     2
     pop     1
+
+    ret
+
+; ---------------------------------------------------------
+; Calculate the modular exponentiation of a 16-bit value (where exponent and modulus are also 16-bit values).
+;
+; X = A^e mod M
+;
+; In:   R2:R1 = a_hi:a_lo
+;       R4:R3 = e_hi:e_lo
+;       m_hi:m_lo
+; Out:  R6:R5 = x_hi:x_lo
+;-----------------------------------------
+mod_exp16:
+    ; 1) _a = mont_convert_in(a, m)
+    ; -----------------------
+    push    3
+    push    4
+    lcall   montgomery_convert_in16
+    pop     4
+    pop     3
+
+    ; 2) _x = mont_convert_in(1, m)
+    ; -----------------------
+    push    1
+    push    2
+    mov     R1, #01h
+    mov     R2, #00h
+    push    3
+    push    4
+    lcall   montgomery_convert_in16
+    pop     4
+    pop     3
+    mov     A, R1
+    mov     x_lo, A
+    mov     A, R2
+    mov     x_hi, A
+    pop     2
+    pop     1
+
+    ; 3) n_bits = get_bits_cnt(e)
+    ; -----------------------
+    push    1
+    push    2
+    mov     A, R3
+    mov     R1, A
+    mov     A, R4
+    mov     R2, A
+    lcall   get_bit_cnt16
+    pop     2
+    pop     1
+    mov     R7, A
+    jz      modexp_exp_zero
+
+    ; 4) square and multiply loop
+    ; -----------------------
+    mod_exp_loop:
+    ; _x = mont_pro(_x, _x, m)
+    ; -----------------------
+    mov     a_lo, x_lo
+    mov     a_hi, x_hi
+    mov     b_lo, x_lo
+    mov     b_hi, x_hi
+    lcall   montgomery_pro16
+    mov     x_lo, result_lo
+    mov     x_hi, result_hi
+
+    ; check exponent bit
+    push    1
+    push    2
+    mov     A, R3
+    mov     R1, A
+    mov     A, R4
+    mov     R2, A
+    mov     A, R7
+    dec     A
+    lcall   get_bit32
+    pop     2
+    pop     1
+    jz      skip_mul_a
+    ;_x = mont_pro(_a, _x, m)
+    ; -----------------------
+    mov     a_lo, R1
+    mov     a_hi, R2
+    mov     b_lo, result_lo
+    mov     b_hi, result_hi
+    lcall   montgomery_pro16
+    mov     x_lo, result_lo
+    mov     x_hi, result_hi
+
+    skip_mul_a:
+    djnz    R7, mod_exp_loop
+
+    ; 5) x = mont_convert_out(_x, m)
+    ; -----------------------
+    modexp_exp_zero:
+    push    1
+    push    2
+    mov     R1, x_lo
+    mov     R2, x_hi
+    lcall   montgomery_convert_out16
+    mov     A, R1
+    mov     x_lo, A
+    mov     A, R2
+    mov     x_hi, A
+    pop     2
+    pop     1
+
+    mov     R5, x_lo
+    mov     R6, x_hi
 
     ret
 
