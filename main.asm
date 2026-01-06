@@ -51,6 +51,23 @@
     x_lo        EQU 38h
     x_hi        EQU 39h
 
+    ; variables used in Diffie-Hellman protocol
+    p_lo        EQU 4bh ; prime number
+    p_hi        EQU 4ch
+    g_lo        EQU 4dh ; generator
+    g_hi        EQU 4eh
+    ka_lo       EQU 4fh ; private key A
+    ka_hi       EQU 50h
+    kb_lo       EQU 51h ; private key B
+    kb_hi       EQU 52h
+    ca_lo       EQU 53h ; public key A
+    ca_hi       EQU 54h
+    cb_lo       EQU 55h ; public key B
+    cb_hi       EQU 56h
+    d_lo        EQU 57h ; secret key
+    d_hi        EQU 58h
+
+
 main:
     lcall   init_LCD
 
@@ -61,123 +78,177 @@ main:
     mov     assert_cnt, #0
 
     ; ---------------------------------------------------------
-    ; test case 1
+    ; Diffie-Hellman key exchange example 1
     ; ---------------------------------------------------------
-    ; A = 0x0022 = 34
-    ; e = 0x0003 = 3
-    ; M = 0x0031 = 49
+    ; p = 23 = 0x0017
+    ; g = 5
     ;
-    ; expected:
-    ; U = 34^3 mod 49 = 6
+    ; kA = 6
+    ; cA = g^kA mod p = 8
+    ;
+    ; kB = 15
+    ; cB = g^kB mod p = 19 = 0x0013
+    ;
+    ; d = cB^kA mod p = cA^kB mod p = 2
     ; ---------------------------------------------------------
-    mov     R1, #22h
-    mov     R2, #00h
-    mov     R3, #03h
-    mov     R4, #00h
-    mov     m_lo, #31h
-    mov     m_hi, #00h
-    lcall   mod_exp16
-    ASSERT16 00h, 06h, R6, R5
+    ; mov     p_lo, #17h
+    ; mov     p_hi, #00h
+    ; mov     g_lo, #05h
+    ; mov     g_hi, #00h
+    ;
+    ; mov     ka_lo, #06h
+    ; mov     ka_hi, #00h
+    ; mov     kb_lo, #0Fh
+    ; mov     kb_hi, #00h
+    ;
+    ; exp_ca_lo       EQU 08h
+    ; exp_ca_hi       EQU 00h
+    ; exp_cb_lo       EQU 13h
+    ; exp_cb_hi       EQU 00h
+    ; exp_secret_lo   EQU 02h
+    ; exp_secret_hi   EQU 00h
 
     ; ---------------------------------------------------------
-    ; test case 2
+    ; Diffie-Hellman key exchange example 2
     ; ---------------------------------------------------------
-    ; A = 0x0011 = 17
-    ; e = 0x0000 = 0
-    ; M = 0x001F = 31
+    ; p = 467 = 0x01D3
+    ; g = 2
     ;
-    ; expected:
-    ; U = 17^0 mod 31 = 1
+    ; kA = 123
+    ; cA = g^kA mod p = 125 = 0x007D
+    ;
+    ; kB = 321
+    ; cB = g^kB mod p = 268 = 0x010C
+    ;
+    ; d = cB^kA mod p = cA^kB mod p = 46 = 0x002E
     ; ---------------------------------------------------------
-    mov     R1, #11h
-    mov     R2, #00h
-    mov     R3, #00h
-    mov     R4, #00h
-    mov     m_lo, #1Fh
-    mov     m_hi, #00h
-    lcall   mod_exp16
-    ASSERT16 00h, 01h, R6, R5
+    ; mov     p_lo, #0D3h
+    ; mov     p_hi, #01h
+    ; mov     g_lo, #02h
+    ; mov     g_hi, #00h
+    ;
+    ; mov     ka_lo, #7Bh
+    ; mov     ka_hi, #00h
+    ; mov     kb_lo, #41h
+    ; mov     kb_hi, #01h
+    ;
+    ; exp_ca_lo       EQU 7Dh
+    ; exp_ca_hi       EQU 00h
+    ; exp_cb_lo       EQU 0Ch
+    ; exp_cb_hi       EQU 01h
+    ; exp_secret_lo   EQU 2Eh
+    ; exp_secret_hi   EQU 00h
 
     ; ---------------------------------------------------------
-    ; test case 3
+    ; Diffie-Hellman key exchange example 3
     ; ---------------------------------------------------------
-    ; A = 0x0007 = 7
-    ; e = 0x000D = 13
-    ; M = 0x0021 = 33
+    ; p = 919 = 0x0397
+    ; g = 327 = 0x0147
     ;
-    ; expected:
-    ; U = 7^13 mod 33 = 13 = 0x000D
+    ; kA = 400 = 0x0190
+    ; cA = g^kA mod p = 231 = 0x00E7
+    ;
+    ; kB = 729 = 0x02D9
+    ; cB = g^kB mod p = 162 = 0x00A2
+    ;
+    ; d = cB^kA mod p = cA^kB mod p = 206 = 0x00CE
     ; ---------------------------------------------------------
-    mov     R1, #07h
-    mov     R2, #00h
-    mov     R3, #0Dh
-    mov     R4, #00h
-    mov     m_lo, #21h
-    mov     m_hi, #00h
-    lcall   mod_exp16
-    ASSERT16 00h, 0Dh, R6, R5
+    ; mov     p_lo, #097h
+    ; mov     p_hi, #03h
+    ; mov     g_lo, #47h
+    ; mov     g_hi, #01h
+    ;
+    ; mov     ka_lo, #90h
+    ; mov     ka_hi, #01h
+    ; mov     kb_lo, #0D9h
+    ; mov     kb_hi, #02h
+    ;
+    ; exp_ca_lo       EQU 0E7h
+    ; exp_ca_hi       EQU 00h
+    ; exp_cb_lo       EQU 0A2h
+    ; exp_cb_hi       EQU 00h
+    ; exp_secret_lo   EQU 0CEh
+    ; exp_secret_hi   EQU 00h
 
     ; ---------------------------------------------------------
-    ; test case 4
+    ; Diffie-Hellman key exchange example 4
     ; ---------------------------------------------------------
-    ; A = 0x0011 = 17
-    ; e = 0x0017 = 23
-    ; M = 0x0061 = 97
+    ; p = 941 = 0x03AD
+    ; g = 627 = 0x0273
     ;
-    ; expected:
-    ; U = 17^23 mod 97 = 7 = 0x0007
+    ; kA = 347 = 0x015B
+    ; cA = g^kA mod p = 390 = 0x0186
+    ;
+    ; kB = 781 = 0x030D
+    ; cB = g^kB mod p = 691 = 0x02B3
+    ;
+    ; d = cB^kA mod p = cA^kB mod p = 470 = 0x01D6
     ; ---------------------------------------------------------
-    mov     R1, #11h
-    mov     R2, #00h
-    mov     R3, #17h
-    mov     R4, #00h
-    mov     m_lo, #61h
-    mov     m_hi, #00h
-    lcall   mod_exp16
-    ASSERT16 00h, 07h, R6, R5
+    mov     p_lo, #0ADh
+    mov     p_hi, #03h
+    mov     g_lo, #73h
+    mov     g_hi, #02h
 
-    ; ---------------------------------------------------------
-    ; test case 5
-    ; ---------------------------------------------------------
-    ; A = 0x0005 = 5
-    ; e = 0x0075 = 117
-    ; M = 0x0013 = 19
-    ;
-    ; expected:
-    ; U = 5^117 mod 19 = 1 = 0x0001
-    ; ---------------------------------------------------------
-    mov     R1, #05h
-    mov     R2, #00h
-    mov     R3, #75h
-    mov     R4, #00h
-    mov     m_lo, #13h
-    mov     m_hi, #00h
-    lcall   mod_exp16
-    ASSERT16 00h, 01h, R6, R5
+    mov     ka_lo, #5Bh
+    mov     ka_hi, #01h
+    mov     kb_lo, #0Dh
+    mov     kb_hi, #03h
 
-    ; ---------------------------------------------------------
-    ; test case 6
-    ; ---------------------------------------------------------
-    ; A = 0x0040 = 64
-    ; e = 0x0002 = 2
-    ; M = 0x0031 = 49
-    ;
-    ; expected:
-    ; U = 64^2 mod 49 = 29 = 0x001D
-    ; ---------------------------------------------------------
-    ; mov     R1, #40h
-    ; mov     R2, #00h
-    ; mov     R3, #02h
-    ; mov     R4, #00h
-    ; mov     m_lo, #31h
-    ; mov     m_hi, #00h
-    ; lcall   mod_exp16
-    ; ASSERT16 00h, 1Dh, R6, R5
+    exp_ca_lo       EQU 086h
+    exp_ca_hi       EQU 01h
+    exp_cb_lo       EQU 0B3h
+    exp_cb_hi       EQU 02h
+    exp_secret_lo   EQU 0D6h
+    exp_secret_hi   EQU 01h
+
+    ; calculate public key A
+    mov     R1, g_lo
+    mov     R2, g_hi
+    mov     R3, ka_lo
+    mov     R4, ka_hi
+    mov     m_lo, p_lo
+    mov     m_hi, p_hi
+    lcall   mod_exp16
+    ASSERT16 exp_ca_hi, exp_ca_lo, R6, R5
+    mov     ca_lo, R5
+    mov     ca_hi, R6
+
+    ; calculate public key B
+    mov     R1, g_lo
+    mov     R2, g_hi
+    mov     R3, kb_lo
+    mov     R4, kb_hi
+    mov     m_lo, p_lo
+    mov     m_hi, p_hi
+    lcall   mod_exp16
+    ASSERT16 exp_cb_hi, exp_cb_lo, R6, R5
+    mov     cb_lo, R5
+    mov     cb_hi, R6
+
+    ; calculate secret key for person A
+    mov     R1, cb_lo
+    mov     R2, cb_hi
+    mov     R3, ka_lo
+    mov     R4, ka_hi
+    mov     m_lo, p_lo
+    mov     m_hi, p_hi
+    lcall   mod_exp16
+    ASSERT16 exp_secret_hi, exp_secret_lo, R6, R5
+
+    ; calculate secret key for person B
+    mov     R1, ca_lo
+    mov     R2, ca_hi
+    mov     R3, kb_lo
+    mov     R4, kb_hi
+    mov     m_lo, p_lo
+    mov     m_hi, p_hi
+    lcall   mod_exp16
+    ASSERT16 exp_secret_hi, exp_secret_lo, R6, R5
 
     jmp     $
 
 ASSERT_FAIL:
-    sjmp ASSERT_FAIL
+    sjmp    ASSERT_FAIL
 
 ;-----------------------------------------
 ; add 16-bit values
