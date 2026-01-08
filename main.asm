@@ -12,12 +12,13 @@
         cjne    A, #exp_hi, ASSERT_FAIL
     ENDM
 
-    ; display.LIB code starts from adress 9800h and uses 40h-4ah memory region of RAM
-    EXTRN code(init_LCD,LCD_XY,zapisz_string_LCD,dispACC_LCD)
-
     ORG 8000h
     jmp main
     ORG 8500h
+
+    ; address of XC953XL GPIO0..7 available on JP1.2-9 
+    GPIO_ext    EQU 0D000h
+    ; to set GPIO0: write 01h, GPIO1: 02h, GPIO2: 04h and so on
 
     ; variables to use in montgomery multiplication
     a_lo        EQU 20h
@@ -67,13 +68,7 @@
     d_lo        EQU 57h ; secret key
     d_hi        EQU 58h
 
-
 main:
-    lcall   init_LCD
-
-    mov     A, R4
-    lcall   dispACC_LCD
-
     ; initialize ASSERT counter
     mov     assert_cnt, #0
 
@@ -726,6 +721,11 @@ montgomery_mul16:
 ; Out:  R6:R5 = x_hi:x_lo
 ;-----------------------------------------
 mod_exp16:
+    ; set ext GPIO0 high
+    mov     DPTR, #GPIO_ext
+    mov     A, #01h
+	movx    @DPTR, A
+
     ; 1) _a = mont_convert_in(a, m)
     ; -----------------------
     push    3
@@ -769,6 +769,11 @@ mod_exp16:
     ; 4) square and multiply loop
     ; -----------------------
     mod_exp_loop:
+    ; set ext GPIO0-2 high
+    mov     DPTR, #GPIO_ext
+    mov     A, #07h
+	movx    @DPTR, A
+
     ; _x = mont_pro(_x, _x, m)
     ; -----------------------
     mov     a_lo, x_lo
@@ -778,6 +783,11 @@ mod_exp16:
     lcall   montgomery_pro16
     mov     x_lo, result_lo
     mov     x_hi, result_hi
+
+    ; set ext GPIO2 low and keep GPIO0-1 high
+    mov     DPTR, #GPIO_ext
+    mov     A, #03h
+	movx    @DPTR, A
 
     ; check exponent bit
     push    1
@@ -792,6 +802,12 @@ mod_exp16:
     pop     2
     pop     1
     jz      skip_mul_a
+
+    ; set ext GPIO3 high and keep GPIO0-1 high
+    mov     DPTR, #GPIO_ext
+    mov     A, #0Bh
+	movx    @DPTR, A
+
     ;_x = mont_pro(_a, _x, m)
     ; -----------------------
     mov     a_lo, R1
@@ -801,6 +817,11 @@ mod_exp16:
     lcall   montgomery_pro16
     mov     x_lo, result_lo
     mov     x_hi, result_hi
+
+    ; set ext GPIO1,3 low and keep GPIO0 high
+    mov     DPTR, #GPIO_ext
+    mov     A, #01h
+	movx    @DPTR, A
 
     skip_mul_a:
     djnz    R7, mod_exp_loop
@@ -822,6 +843,11 @@ mod_exp16:
 
     mov     R5, x_lo
     mov     R6, x_hi
+
+    ; set ext GPIO0-1 low
+    mov     DPTR, #GPIO_ext
+    mov     A, #0
+	movx    @DPTR, A
 
     ret
 
