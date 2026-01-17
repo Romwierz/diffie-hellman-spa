@@ -73,7 +73,7 @@ main:
     ; initialize ASSERT counter
     mov     assert_cnt, #0
 
-    lcall test_mul16
+    lcall   test_square16
 
     ; ---------------------------------------------------------
     ; Diffie-Hellman key exchange example 1
@@ -350,6 +350,83 @@ mul16:
     mov A, result_3
     addc A, B
     mov result_3, A
+
+    ret
+
+;-----------------------------------------
+; Square 16-bit value.
+; 
+; A^2 = P (32-bit)
+;
+; In:   R2:R1
+;
+; Out:  R6:R5:R4:R3
+;-----------------------------------------
+square16:
+   ; clear result
+    mov     R3, #0
+    mov     R4, #0
+    mov     R5, #0
+    mov     R6, #0
+
+    ;--------------------------
+    ; lo * lo
+    ;--------------------------
+    mov     A, R1
+    mov     B, R1
+    mul     AB
+    mov     R3, A
+    mov     R4, B
+
+    ;--------------------------
+    ; hi * hi
+    ;--------------------------
+    mov     A, R2
+    mov     B, R2
+    mul     AB
+    mov     R5, A
+    mov     R6, B
+
+    ;--------------------------
+    ; lo * hi  (store in R7:R0)
+    ;--------------------------
+    mov     A, R1
+    mov     B, R2
+    mul     AB
+    mov     R0, A ; tmp_lo
+    mov     R7, B ; tmp_hi
+
+    ;--------------------------
+    ; add first copy
+    ;--------------------------
+    clr     C
+    mov     A, R4
+    add     A, R0
+    mov     R4, A
+
+    mov     A, R5
+    addc    A, R7
+    mov     R5, A
+
+    mov     A, R6
+    addc    A, #0
+    mov     R6, A
+
+    ;--------------------------
+    ; add second copy
+    ;--------------------------
+    clr     C
+    mov     A, R4
+    add     A, R0
+    mov     R4, A
+
+    mov     A, R5
+    addc    A, R7
+    mov     R5, A
+
+    mov     A, R6
+    addc    A, #0
+    mov     R6, A
 
     ret
 
@@ -1070,104 +1147,54 @@ get_bit32:
         cjne    A, #exp_3, ASSERT_FAIL_1
     ENDM
 
-test_mul16:
+test_square16:
     ; ------------
     ; test case 1
     ; ------------
     ; A = 0x0004
-    ; B = 0x0005
-    ;
     ; expected:
-    ; P = 4 * 5 = 20 = 0x00000014
+    ; P = 0x00000010 = 16
     ; --------------------------------
-    ; mov     a_lo, #04h
-    ; mov     a_hi, #00h
-    ; mov     b_lo, #05h
-    ; mov     b_hi, #00h
-    ; lcall   mul16
-    ; ASSERT32 00h, 00h, 00h, 14h, result_3, result_2, result_1, result_0
+    mov     R1, #04h
+    mov     R2, #00h
+    lcall   square16
+    ASSERT32 00h, 00h, 00h, 10h, R6, R5, R4, R3
 
     ; ------------
     ; test case 2
     ; ------------
-    ; A = 0x00FF
-    ; B = 0x0002
-    ;
+    ; A = 0x0005
     ; expected:
-    ; P = 255 * 2 = 510 = 0x000001FE
+    ; P = 0x00000019 = 25
     ; --------------------------------
-    ; mov     a_lo, #0FFh
-    ; mov     a_hi, #00h
-    ; mov     b_lo, #02h
-    ; mov     b_hi, #00h
-    ; lcall   mul16
-    ; ASSERT32 00h, 00h, 01h, 0FEh, result_3, result_2, result_1, result_0
+    mov     R1, #05h
+    mov     R2, #00h
+    lcall   square16
+    ASSERT32 00h, 00h, 00h, 19h, R6, R5, R4, R3
 
     ; ------------
     ; test case 3
     ; ------------
-    ; A = 0x1234
-    ; B = 0x0002
-    ;
+    ; A = 0x00FF
     ; expected:
-    ; P = 0x1234 * 2 = 0x00002468
+    ; P = 0x00FE01 = 65025
     ; --------------------------------
-    ; mov     a_lo, #34h
-    ; mov     a_hi, #12h
-    ; mov     b_lo, #02h
-    ; mov     b_hi, #00h
-    ; lcall   mul16
-    ; ASSERT32 00h, 00h, 24h, 68h, result_3, result_2, result_1, result_0
+    ; mov     R1, #0FFh
+    ; mov     R2, #00h
+    ; lcall   square16
+    ; ASSERT32 00h, 00h, 0FEh, 01h, R6, R5, R4, R3
 
     ; ------------
     ; test case 4
     ; ------------
-    ; A = 0xFFFF
-    ; B = 0xFFFF
-    ;
+    ; A = 0x1234
     ; expected:
-    ; P = 65535 * 65535 = 4294836225 = 0xFFFE0001
+    ; P = 0x014B5A90
     ; --------------------------------
-    ; mov     a_lo, #0FFh
-    ; mov     a_hi, #0FFh
-    ; mov     b_lo, #0FFh
-    ; mov     b_hi, #0FFh
-    ; lcall   mul16
-    ; ASSERT32 0FFh, 0FEh, 00h, 01h, result_3, result_2, result_1, result_0
-
-    ; ------------
-    ; test case 5
-    ; ------------
-    ; A = 0x0000
-    ; B = 0x1234
-    ;
-    ; expected:
-    ; P = 0x00000000
-    ; --------------------------------
-    mov     a_lo, #00h
-    mov     a_hi, #00h
-    mov     b_lo, #34h
-    mov     b_hi, #12h
-    lcall   mul16
-    ASSERT32 00h, 00h, 00h, 00h, result_3, result_2, result_1, result_0
-
-    ; ------------
-    ; test case 6
-    ; ------------
-    ; A = 0xFFFF
-    ; B = 0x0002
-    ;
-    ; expected:
-    ; P = 0x0001FFFE
-    ; --------------------------------
-    mov     a_lo, #0FFh
-    mov     a_hi, #0FFh
-    mov     b_lo, #02h
-    mov     b_hi, #00h
-    lcall   mul16
-    ASSERT32 00h, 01h, 0FFh, 0FEh, result_3, result_2, result_1, result_0
-
-    ret 
+    ; mov     R1, #34h
+    ; mov     R2, #12h
+    ; lcall   square16
+    ; ASSERT32 01h, 4Bh, 5Ah, 90h, R6, R5, R4, R3
 
 ASSERT_FAIL_1:
     sjmp    ASSERT_FAIL_1
