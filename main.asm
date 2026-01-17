@@ -27,12 +27,10 @@
     b_hi        EQU 23h
     m_lo        EQU 24h
     m_hi        EQU 25h
-    result_lo   EQU 26h
-    result_hi   EQU 27h
-    result_ext  EQU 28h ; for bits b17 and b16 of the result
-
-    ; variable to use in cmp_ge16 subroutine
-    cmp_var     EQU 29h
+    result_0    EQU 26h
+    result_1    EQU 27h
+    result_2    EQU 28h
+    result_3    EQU 29h
 
     ; variables to use in mod32_16
     rem_lo      EQU 30h
@@ -68,9 +66,14 @@
     d_lo        EQU 57h ; secret key
     d_hi        EQU 58h
 
+    ; variable to use in cmp_ge16 subroutine
+    cmp_var     EQU 59h
+
 main:
     ; initialize ASSERT counter
     mov     assert_cnt, #0
+
+    lcall test_mul16
 
     ; ---------------------------------------------------------
     ; Diffie-Hellman key exchange example 1
@@ -196,6 +199,7 @@ main:
     exp_secret_lo   EQU 0D6h
     exp_secret_hi   EQU 01h
 
+monitor_volt_loop:
     ; calculate public key A
     mov     R1, g_lo
     mov     R2, g_hi
@@ -207,7 +211,7 @@ main:
     ASSERT16 exp_ca_hi, exp_ca_lo, R6, R5
     mov     ca_lo, R5
     mov     ca_hi, R6
-
+	jmp monitor_volt_loop
     ; calculate public key B
     mov     R1, g_lo
     mov     R2, g_hi
@@ -281,6 +285,71 @@ sub16:
     mov     A, R1
     subb    A, R3
     mov     R5, A
+
+    ret
+
+;-----------------------------------------
+; Multiply 16-bit values.
+;
+; A * B = P (32-bit)
+;
+; In:   a_hi:a_lo
+;       b_hi:b_lo
+;
+; Out:  result_3:result_2:result_1:result_0
+;-----------------------------------------
+mul16:
+    ; result = 0
+    mov     result_0, #0
+    mov     result_1, #0
+    mov     result_2, #0
+    mov     result_3, #0
+
+    clr     C ; clear Carry
+
+    ; a_lo * b_lo
+    mov     A, a_lo
+    mov     B, b_lo
+    mul     AB ; A=lo, B=hi
+    mov     result_0, A
+    mov     result_1, B
+
+    ; a_lo * b_hi
+    mov     A, a_lo
+    mov     B, b_hi
+    mul     AB
+    add     A, result_1
+    mov     result_1, A
+    mov     A, result_2
+    addc    A, B
+    mov     result_2, A
+    jnc     mul_no_carry1
+    inc     result_3
+    mul_no_carry1:
+
+    ; a_hi * b_lo
+    mov     A, a_hi
+    mov     B, b_lo
+    mul     AB
+    add     A, result_1
+    mov     result_1, A
+    mov     A, result_2
+    addc    A, B
+    mov     result_2, A
+    ; mov     result_3, A
+    jnc     mul_no_carry2
+    inc     result_3
+    mul_no_carry2:
+
+    ; a_hi * b_hi
+    mov A, a_hi
+    mov B, b_hi
+    mul AB
+    add A, result_2
+    mov result_2, A
+    mov A, result_3
+    addc A, B
+    mov result_3, A
 
     ret
 
@@ -500,8 +569,8 @@ montgomery_convert_out16:
     mov     b_lo, #01h
     mov     b_hi, #00h
     lcall   montgomery_pro16
-    mov     R1, result_lo
-    mov     R2, result_hi
+    mov     R1, result_0
+    mov     R2, result_1
 
     ret
 
@@ -513,7 +582,7 @@ montgomery_convert_out16:
 ; In:   a_hi:a_lo }
 ;       b_hi:b_lo } RAM addresses
 ;       m_hi:m_lo }
-; Out:  result_hi:result_lo = _U
+; Out:  result_1:result_0 = _U
 ;-----------------------------------------
 ; Important notes:
 ;
@@ -524,13 +593,13 @@ montgomery_convert_out16:
 ; may exceed 16 bits due to additions:
 ;   result += B and result += M.
 ;
-; result_ext stores carry-out bits beyond bit15 (bits 16-17),
+; result_2 stores carry-out bits beyond bit15 (bits 16-17),
 ; preserving full intermediate precision.
 ;
-; Before each right shift of result_hi:result_lo, result_ext is also shifted and because of the fact,
+; Before each right shift of result_1:result_0, result_2 is also shifted and because of the fact,
 ; that LSB bit is shifted into Carry, a correct logical (n+1)-bit shift is ensured.
 ;
-; Without result_ext, MSBs would be lost and the algorithm
+; Without result_2, MSBs would be lost and the algorithm
 ; would produce incorrect results.
 ; ---------------------------------------------------------
 montgomery_pro16:
@@ -543,9 +612,9 @@ montgomery_pro16:
     push    7
 
     ; initialize result with 0
-    mov     result_lo, #0
-    mov     result_hi, #0
-    mov     result_ext, #0
+    mov     result_0, #0
+    mov     result_1, #0
+    mov     result_2, #0
 
     ; get bit count of modulus into R7
     push    1
@@ -565,51 +634,51 @@ montgomery_pro16:
     anl     A, #01h
     jz      skip_add_b
     ; result += B
-    mov     R0, result_lo
-    mov     R1, result_hi
+    mov     R0, result_0
+    mov     R1, result_1
     mov     R2, b_lo
     mov     R3, b_hi
     lcall   add16
-    mov     result_lo, R4
-    mov     result_hi, R5
+    mov     result_0, R4
+    mov     result_1, R5
     jnc     no_carry1
-    inc     result_ext
+    inc     result_2
     no_carry1:
 
     skip_add_b:
 
     ; if (result & 1) result += M
     ; ----------------------------
-    mov     A, result_lo
+    mov     A, result_0
     anl     A, #01h
     jz      skip_add_m
 
     ;result += M
-    mov     R0, result_lo
-    mov     R1, result_hi
+    mov     R0, result_0
+    mov     R1, result_1
     mov     R2, m_lo
     mov     R3, m_hi
     lcall   add16
-    mov     result_lo, R4
-    mov     result_hi, R5
+    mov     result_0, R4
+    mov     result_1, R5
     jnc     no_carry2
-    inc     result_ext
+    inc     result_2
     no_carry2:
 
     skip_add_m:
 
     ; result >>= 1
     ; -------------
-    mov     R0, result_lo
-    mov     R1, result_hi
-    ; shift bit17 into bit16 and bit16 into result_hi
+    mov     R0, result_0
+    mov     R1, result_1
+    ; shift bit17 into bit16 and bit16 into result_1
     clr     C
-    mov     A, result_ext
+    mov     A, result_2
     rrc     A
-    mov     result_ext, A
+    mov     result_2, A
     lcall   shiftright16
-    mov     result_lo, R0
-    mov     result_hi, R1
+    mov     result_0, R0
+    mov     result_1, R1
 
     ; A >>= 1
     ; --------
@@ -625,16 +694,16 @@ montgomery_pro16:
 
     ; if result >= M then result -= M
     ; -------------------------------
-    mov     R0, result_lo
-    mov     R1, result_hi
+    mov     R0, result_0
+    mov     R1, result_1
     mov     R2, m_lo
     mov     R3, m_hi
     lcall   cmp16_ge
     jz      montgomery_pro16_done
 
     lcall   sub16 ; final result in in R5:R4
-    mov     result_lo, R4
-    mov     result_hi, R5
+    mov     result_0, R4
+    mov     result_1, R5
 
     montgomery_pro16_done:
     pop     7
@@ -698,8 +767,8 @@ montgomery_mul16:
     ; convert _U out of Montgomery representation -> R6:R5 = U
     push    1
     push    2
-    mov     R1, result_lo
-    mov     R2, result_hi
+    mov     R1, result_0
+    mov     R2, result_1
     lcall   montgomery_convert_out16
     mov     A, R1
     mov     R5, A
@@ -781,8 +850,8 @@ mod_exp16:
     mov     b_lo, x_lo
     mov     b_hi, x_hi
     lcall   montgomery_pro16
-    mov     x_lo, result_lo
-    mov     x_hi, result_hi
+    mov     x_lo, result_0
+    mov     x_hi, result_1
 
     ; set ext GPIO2 low and keep GPIO0-1 high
     mov     DPTR, #GPIO_ext
@@ -812,11 +881,11 @@ mod_exp16:
     ; -----------------------
     mov     a_lo, R1
     mov     a_hi, R2
-    mov     b_lo, result_lo
-    mov     b_hi, result_hi
+    mov     b_lo, result_0
+    mov     b_hi, result_1
     lcall   montgomery_pro16
-    mov     x_lo, result_lo
-    mov     x_hi, result_hi
+    mov     x_lo, result_0
+    mov     x_hi, result_1
 
     ; set ext GPIO1,3 low and keep GPIO0 high
     mov     DPTR, #GPIO_ext
@@ -982,5 +1051,125 @@ get_bit32:
     pop     0
 
     ret
+
+; ---------------------------------------------------------
+;
+; TESTS
+;
+; ---------------------------------------------------------
+    ASSERT32 MACRO exp_3, exp_2, exp_1, exp_0, res_3, res_2, res_1, res_0
+        inc     assert_cnt
+        mov     R7, assert_cnt
+        mov     A, res_0
+        cjne    A, #exp_0, ASSERT_FAIL_1
+        mov     A, res_1
+        cjne    A, #exp_1, ASSERT_FAIL_1
+        mov     A, res_2
+        cjne    A, #exp_2, ASSERT_FAIL_1
+        mov     A, res_3
+        cjne    A, #exp_3, ASSERT_FAIL_1
+    ENDM
+
+test_mul16:
+    ; ------------
+    ; test case 1
+    ; ------------
+    ; A = 0x0004
+    ; B = 0x0005
+    ;
+    ; expected:
+    ; P = 4 * 5 = 20 = 0x00000014
+    ; --------------------------------
+    ; mov     a_lo, #04h
+    ; mov     a_hi, #00h
+    ; mov     b_lo, #05h
+    ; mov     b_hi, #00h
+    ; lcall   mul16
+    ; ASSERT32 00h, 00h, 00h, 14h, result_3, result_2, result_1, result_0
+
+    ; ------------
+    ; test case 2
+    ; ------------
+    ; A = 0x00FF
+    ; B = 0x0002
+    ;
+    ; expected:
+    ; P = 255 * 2 = 510 = 0x000001FE
+    ; --------------------------------
+    ; mov     a_lo, #0FFh
+    ; mov     a_hi, #00h
+    ; mov     b_lo, #02h
+    ; mov     b_hi, #00h
+    ; lcall   mul16
+    ; ASSERT32 00h, 00h, 01h, 0FEh, result_3, result_2, result_1, result_0
+
+    ; ------------
+    ; test case 3
+    ; ------------
+    ; A = 0x1234
+    ; B = 0x0002
+    ;
+    ; expected:
+    ; P = 0x1234 * 2 = 0x00002468
+    ; --------------------------------
+    ; mov     a_lo, #34h
+    ; mov     a_hi, #12h
+    ; mov     b_lo, #02h
+    ; mov     b_hi, #00h
+    ; lcall   mul16
+    ; ASSERT32 00h, 00h, 24h, 68h, result_3, result_2, result_1, result_0
+
+    ; ------------
+    ; test case 4
+    ; ------------
+    ; A = 0xFFFF
+    ; B = 0xFFFF
+    ;
+    ; expected:
+    ; P = 65535 * 65535 = 4294836225 = 0xFFFE0001
+    ; --------------------------------
+    ; mov     a_lo, #0FFh
+    ; mov     a_hi, #0FFh
+    ; mov     b_lo, #0FFh
+    ; mov     b_hi, #0FFh
+    ; lcall   mul16
+    ; ASSERT32 0FFh, 0FEh, 00h, 01h, result_3, result_2, result_1, result_0
+
+    ; ------------
+    ; test case 5
+    ; ------------
+    ; A = 0x0000
+    ; B = 0x1234
+    ;
+    ; expected:
+    ; P = 0x00000000
+    ; --------------------------------
+    mov     a_lo, #00h
+    mov     a_hi, #00h
+    mov     b_lo, #34h
+    mov     b_hi, #12h
+    lcall   mul16
+    ASSERT32 00h, 00h, 00h, 00h, result_3, result_2, result_1, result_0
+
+    ; ------------
+    ; test case 6
+    ; ------------
+    ; A = 0xFFFF
+    ; B = 0x0002
+    ;
+    ; expected:
+    ; P = 0x0001FFFE
+    ; --------------------------------
+    mov     a_lo, #0FFh
+    mov     a_hi, #0FFh
+    mov     b_lo, #02h
+    mov     b_hi, #00h
+    lcall   mul16
+    ASSERT32 00h, 01h, 0FFh, 0FEh, result_3, result_2, result_1, result_0
+
+    ret 
+
+ASSERT_FAIL_1:
+    sjmp    ASSERT_FAIL_1
 
 END
