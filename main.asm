@@ -73,176 +73,72 @@ main:
     ; initialize ASSERT counter
     mov     assert_cnt, #0
 
-    lcall   test_square16
+    some_loop:
+    ; set GPIO2
+    mov     DPTR, #GPIO_ext
+    mov     A, #04h
+	movx    @DPTR, A
 
-    ; ---------------------------------------------------------
-    ; Diffie-Hellman key exchange example 1
-    ; ---------------------------------------------------------
-    ; p = 23 = 0x0017
-    ; g = 5
-    ;
-    ; kA = 6
-    ; cA = g^kA mod p = 8
-    ;
-    ; kB = 15
-    ; cB = g^kB mod p = 19 = 0x0013
-    ;
-    ; d = cB^kA mod p = cA^kB mod p = 2
-    ; ---------------------------------------------------------
-    ; mov     p_lo, #17h
-    ; mov     p_hi, #00h
-    ; mov     g_lo, #05h
-    ; mov     g_hi, #00h
-    ;
-    ; mov     ka_lo, #06h
-    ; mov     ka_hi, #00h
-    ; mov     kb_lo, #0Fh
-    ; mov     kb_hi, #00h
-    ;
-    ; exp_ca_lo       EQU 08h
-    ; exp_ca_hi       EQU 00h
-    ; exp_cb_lo       EQU 13h
-    ; exp_cb_hi       EQU 00h
-    ; exp_secret_lo   EQU 02h
-    ; exp_secret_hi   EQU 00h
+    ; 1 squaring
+    mov     R1, #04h
+    mov     R2, #00h
+    lcall   square16
 
-    ; ---------------------------------------------------------
-    ; Diffie-Hellman key exchange example 2
-    ; ---------------------------------------------------------
-    ; p = 467 = 0x01D3
-    ; g = 2
-    ;
-    ; kA = 123
-    ; cA = g^kA mod p = 125 = 0x007D
-    ;
-    ; kB = 321
-    ; cB = g^kB mod p = 268 = 0x010C
-    ;
-    ; d = cB^kA mod p = cA^kB mod p = 46 = 0x002E
-    ; ---------------------------------------------------------
-    ; mov     p_lo, #0D3h
-    ; mov     p_hi, #01h
-    ; mov     g_lo, #02h
-    ; mov     g_hi, #00h
-    ;
-    ; mov     ka_lo, #7Bh
-    ; mov     ka_hi, #00h
-    ; mov     kb_lo, #41h
-    ; mov     kb_hi, #01h
-    ;
-    ; exp_ca_lo       EQU 7Dh
-    ; exp_ca_hi       EQU 00h
-    ; exp_cb_lo       EQU 0Ch
-    ; exp_cb_hi       EQU 01h
-    ; exp_secret_lo   EQU 2Eh
-    ; exp_secret_hi   EQU 00h
+    ; reset and set GPIO2
+    mov     DPTR, #GPIO_ext
+    mov     A, #00h
+	movx    @DPTR, A
+    mov     DPTR, #GPIO_ext
+    mov     A, #04h
+	movx    @DPTR, A
 
-    ; ---------------------------------------------------------
-    ; Diffie-Hellman key exchange example 3
-    ; ---------------------------------------------------------
-    ; p = 919 = 0x0397
-    ; g = 327 = 0x0147
-    ;
-    ; kA = 400 = 0x0190
-    ; cA = g^kA mod p = 231 = 0x00E7
-    ;
-    ; kB = 729 = 0x02D9
-    ; cB = g^kB mod p = 162 = 0x00A2
-    ;
-    ; d = cB^kA mod p = cA^kB mod p = 206 = 0x00CE
-    ; ---------------------------------------------------------
-    ; mov     p_lo, #097h
-    ; mov     p_hi, #03h
-    ; mov     g_lo, #47h
-    ; mov     g_hi, #01h
-    ;
-    ; mov     ka_lo, #90h
-    ; mov     ka_hi, #01h
-    ; mov     kb_lo, #0D9h
-    ; mov     kb_hi, #02h
-    ;
-    ; exp_ca_lo       EQU 0E7h
-    ; exp_ca_hi       EQU 00h
-    ; exp_cb_lo       EQU 0A2h
-    ; exp_cb_hi       EQU 00h
-    ; exp_secret_lo   EQU 0CEh
-    ; exp_secret_hi   EQU 00h
+    ; 1 squaring + 1 multiplying
+    mov     R1, #04h
+    mov     R2, #00h
+    lcall   square16
+    mov     a_lo, #0FFh
+    mov     a_hi, #0FFh
+    mov     b_lo, #02h
+    mov     b_hi, #00h
+    lcall   mul16
 
-    ; ---------------------------------------------------------
-    ; Diffie-Hellman key exchange example 4
-    ; ---------------------------------------------------------
-    ; p = 941 = 0x03AD
-    ; g = 627 = 0x0273
-    ;
-    ; kA = 347 = 0x015B
-    ; cA = g^kA mod p = 390 = 0x0186
-    ;
-    ; kB = 781 = 0x030D
-    ; cB = g^kB mod p = 691 = 0x02B3
-    ;
-    ; d = cB^kA mod p = cA^kB mod p = 470 = 0x01D6
-    ; ---------------------------------------------------------
-    mov     p_lo, #0ADh
-    mov     p_hi, #03h
-    mov     g_lo, #73h
-    mov     g_hi, #02h
+    ; reset and set GPIO2
+    mov     DPTR, #GPIO_ext
+    mov     A, #00h
+	movx    @DPTR, A
+    mov     DPTR, #GPIO_ext
+    mov     A, #04h
+	movx    @DPTR, A
 
-    mov     ka_lo, #5Bh
-    mov     ka_hi, #01h
-    mov     kb_lo, #0Dh
-    mov     kb_hi, #03h
+    ; 1 squaring
+    mov     R1, #04h
+    mov     R2, #00h
+    lcall   square16
 
-    exp_ca_lo       EQU 086h
-    exp_ca_hi       EQU 01h
-    exp_cb_lo       EQU 0B3h
-    exp_cb_hi       EQU 02h
-    exp_secret_lo   EQU 0D6h
-    exp_secret_hi   EQU 01h
+    ; reset and set GPIO2
+    mov     DPTR, #GPIO_ext
+    mov     A, #00h
+	movx    @DPTR, A
+    mov     DPTR, #GPIO_ext
+    mov     A, #04h
+	movx    @DPTR, A
 
-monitor_volt_loop:
-    ; calculate public key A
-    mov     R1, g_lo
-    mov     R2, g_hi
-    mov     R3, ka_lo
-    mov     R4, ka_hi
-    mov     m_lo, p_lo
-    mov     m_hi, p_hi
-    lcall   mod_exp16
-    ASSERT16 exp_ca_hi, exp_ca_lo, R6, R5
-    mov     ca_lo, R5
-    mov     ca_hi, R6
-	jmp monitor_volt_loop
-    ; calculate public key B
-    mov     R1, g_lo
-    mov     R2, g_hi
-    mov     R3, kb_lo
-    mov     R4, kb_hi
-    mov     m_lo, p_lo
-    mov     m_hi, p_hi
-    lcall   mod_exp16
-    ASSERT16 exp_cb_hi, exp_cb_lo, R6, R5
-    mov     cb_lo, R5
-    mov     cb_hi, R6
+    ; 1 squaring + 1 multiplying
+    mov     R1, #04h
+    mov     R2, #00h
+    lcall   square16
+    mov     a_lo, #0FFh
+    mov     a_hi, #0FFh
+    mov     b_lo, #02h
+    mov     b_hi, #00h
+    lcall   mul16
 
-    ; calculate secret key for person A
-    mov     R1, cb_lo
-    mov     R2, cb_hi
-    mov     R3, ka_lo
-    mov     R4, ka_hi
-    mov     m_lo, p_lo
-    mov     m_hi, p_hi
-    lcall   mod_exp16
-    ASSERT16 exp_secret_hi, exp_secret_lo, R6, R5
+    ; reset GPIO2
+    mov     DPTR, #GPIO_ext
+    mov     A, #00h
+	movx    @DPTR, A
 
-    ; calculate secret key for person B
-    mov     R1, ca_lo
-    mov     R2, ca_hi
-    mov     R3, kb_lo
-    mov     R4, kb_hi
-    mov     m_lo, p_lo
-    mov     m_hi, p_hi
-    lcall   mod_exp16
-    ASSERT16 exp_secret_hi, exp_secret_lo, R6, R5
+    jmp some_loop
 
     jmp     $
 
