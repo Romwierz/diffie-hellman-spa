@@ -11,9 +11,9 @@ def mont_pro(a, b, m):
             result += m
         result >>= 1
         a >>= 1
-        print(i, end=":\n")
-        print("    result =", hex(result))
-        print("    a      =", hex(a))
+        # print(i, end=":\n")
+        # print("    result =", hex(result))
+        # print("    a      =", hex(a))
     if result >= m:
         result -= m
 
@@ -37,5 +37,7 @@ def mod_exp(a, e, m):
         _x = mont_pro(_x, _x, m)
         if e & (1 << i):
             _x = mont_pro(_a, _x, m)
+        print(i, end=":\n")
+        print("    x =", hex(_x))
     
     return mont_convert_out(_x, m)
