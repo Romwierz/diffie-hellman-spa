@@ -69,76 +69,91 @@
     ; variable to use in cmp_ge16 subroutine
     cmp_var     EQU 59h
 
+    ; variables to use in mod32_16_div8 subroutine
+    q           EQU 60h
+    tmp_lo      EQU 61h
+    tmp_hi      EQU 62h
+
 main:
     ; initialize ASSERT counter
     mov     assert_cnt, #0
 
-    some_loop:
+    main_loop:
+    ; ------------------------
+    ; SQUARING
+    ; ------------------------
+    ; set GPIO1
+    mov     DPTR, #GPIO_ext
+    mov     A, #02h
+	movx    @DPTR, A
+    ; 1 squaring
+    mov     R1, #04h
+    mov     R2, #00h
+    lcall   square16
+    ; reset GPIO
+    mov     DPTR, #GPIO_ext
+    mov     A, #00h
+	movx    @DPTR, A
+
+    ; ------------------------
+    ; MODULO
+    ; ------------------------
+    ; set GPIO3
+    mov     DPTR, #GPIO_ext
+    mov     A, #08h
+	movx    @DPTR, A
+    ; 1 modulo
+    mov     R1, #78h ; a0 (LSB)
+    mov     R2, #56h
+    mov     R3, #34h
+    mov     R4, #12h ; a3 (MSB)
+    mov     m_lo, #34h
+    mov     m_hi, #12h
+    lcall   mod32_16_div8
+    ; reset GPIO
+    mov     DPTR, #GPIO_ext
+    mov     A, #00h
+	movx    @DPTR, A
+
+    ; ------------------------
+    ; MULTIPLYING
+    ; ------------------------
     ; set GPIO2
     mov     DPTR, #GPIO_ext
     mov     A, #04h
 	movx    @DPTR, A
-
-    ; 1 squaring
-    mov     R1, #04h
-    mov     R2, #00h
-    lcall   square16
-
-    ; reset and set GPIO2
-    mov     DPTR, #GPIO_ext
-    mov     A, #00h
-	movx    @DPTR, A
-    mov     DPTR, #GPIO_ext
-    mov     A, #04h
-	movx    @DPTR, A
-
-    ; 1 squaring + 1 multiplying
-    mov     R1, #04h
-    mov     R2, #00h
-    lcall   square16
+    ; 1 multiplying
     mov     a_lo, #0FFh
     mov     a_hi, #0FFh
     mov     b_lo, #02h
     mov     b_hi, #00h
     lcall   mul16
-
-    ; reset and set GPIO2
-    mov     DPTR, #GPIO_ext
-    mov     A, #00h
-	movx    @DPTR, A
-    mov     DPTR, #GPIO_ext
-    mov     A, #04h
-	movx    @DPTR, A
-
-    ; 1 squaring
-    mov     R1, #04h
-    mov     R2, #00h
-    lcall   square16
-
-    ; reset and set GPIO2
-    mov     DPTR, #GPIO_ext
-    mov     A, #00h
-	movx    @DPTR, A
-    mov     DPTR, #GPIO_ext
-    mov     A, #04h
-	movx    @DPTR, A
-
-    ; 1 squaring + 1 multiplying
-    mov     R1, #04h
-    mov     R2, #00h
-    lcall   square16
-    mov     a_lo, #0FFh
-    mov     a_hi, #0FFh
-    mov     b_lo, #02h
-    mov     b_hi, #00h
-    lcall   mul16
-
-    ; reset GPIO2
+    ; reset GPIO
     mov     DPTR, #GPIO_ext
     mov     A, #00h
 	movx    @DPTR, A
 
-    jmp some_loop
+    ; ------------------------
+    ; MODULO
+    ; ------------------------
+    ; set GPIO3
+    mov     DPTR, #GPIO_ext
+    mov     A, #08h
+	movx    @DPTR, A
+    ; 1 modulo
+    mov     R1, #78h ; a0 (LSB)
+    mov     R2, #56h
+    mov     R3, #34h
+    mov     R4, #12h ; a3 (MSB)
+    mov     m_lo, #34h
+    mov     m_hi, #12h
+    lcall   mod32_16_div8
+    ; reset GPIO
+    mov     DPTR, #GPIO_ext
+    mov     A, #00h
+	movx    @DPTR, A
+
+    jmp main_loop
 
     jmp     $
 
@@ -232,7 +247,6 @@ mul16:
     mov     A, result_2
     addc    A, B
     mov     result_2, A
-    ; mov     result_3, A
     jnc     mul_no_carry2
     inc     result_3
     mul_no_carry2:
@@ -413,6 +427,77 @@ mod32_16:
     djnz    R7, mod_loop
 
     pop     0
+    ret
+
+;-----------------------------------------
+; Fast modulo: 32-bit A mod 16-bit M
+; using 8-bit hardware DIV
+;
+; In:   R4:R3:R2:R1 = a3:a2:a1:a0
+;       m_hi:m_lo
+; Out:  rem_hi:rem_lo
+;-----------------------------------------
+mod32_16_div8:
+
+    mov     rem_lo, #0
+    mov     rem_hi, #0
+
+    mov     R6, #4 ; 4 bytes
+    mov     R0, #4 ; pointer to MSB (R4)
+
+    mod_div8_loop:
+    ; r <<= 8, r |= next byte
+    mov     rem_hi, rem_lo
+    mov     rem_lo, @R0
+    dec     R0
+
+    ; --- approximate division ---
+    mov     A, rem_hi
+    mov     B, m_hi
+    jz      mod_skip_div    ; safety (should not happen)
+
+    div     AB              ; A = q, B = rem
+    mov     q, A
+
+    ; --- tmp = q * M ---
+    mov     A, q
+    mov     B, m_lo
+    mul     AB
+    mov     tmp_lo, A
+    mov     tmp_hi, B
+
+    mov     A, q
+    mov     B, m_hi
+    mul     AB
+    add     A, tmp_hi
+    mov     tmp_hi, A
+
+    ; --- r -= tmp ---
+    clr     C
+    mov     A, rem_lo
+    subb    A, tmp_lo
+    mov     rem_lo, A
+
+    mov     A, rem_hi
+    subb    A, tmp_hi
+    mov     rem_hi, A
+
+    ; --- correction if negative ---
+    jnc     mod_ok
+
+    ; r += M
+    mov     A, rem_lo
+    add     A, m_lo
+    mov     rem_lo, A
+
+    mov     A, rem_hi
+    addc    A, m_hi
+    mov     rem_hi, A
+
+    mod_ok:
+    mod_skip_div:
+    djnz    R6, mod_div8_loop
+
     ret
 
 ;-----------------------------------------
