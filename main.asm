@@ -78,6 +78,14 @@ main:
     ; initialize ASSERT counter
     mov     assert_cnt, #0
 
+    ; set base initial value
+    mov     rem_lo, #04h
+    mov     rem_hi, #00h
+
+    ; set modulus
+    mov     m_lo, #34h
+    mov     m_hi, #12h
+
     main_loop:
     ; ------------------------
     ; SQUARING
@@ -87,8 +95,8 @@ main:
     mov     A, #02h
 	movx    @DPTR, A
     ; 1 squaring
-    mov     R1, #04h
-    mov     R2, #00h
+    mov     R1, rem_lo
+    mov     R2, rem_hi
     lcall   square16
     ; reset GPIO
     mov     DPTR, #GPIO_ext
@@ -103,12 +111,10 @@ main:
     mov     A, #08h
 	movx    @DPTR, A
     ; 1 modulo
-    mov     R1, #78h ; a0 (LSB)
-    mov     R2, #56h
-    mov     R3, #34h
-    mov     R4, #12h ; a3 (MSB)
-    mov     m_lo, #34h
-    mov     m_hi, #12h
+    mov     R1, 3 ; a0 (LSB)
+    mov     R2, 4 ; a1
+    mov     R3, 5 ; a2
+    mov     R4, 6 ; a3 (MSB)
     lcall   mod32_16_div8
     ; reset GPIO
     mov     DPTR, #GPIO_ext
@@ -123,10 +129,10 @@ main:
     mov     A, #04h
 	movx    @DPTR, A
     ; 1 multiplying
-    mov     a_lo, #0FFh
-    mov     a_hi, #0FFh
+    mov     a_lo, rem_lo
+    mov     a_hi, rem_hi
     mov     b_lo, #02h
-    mov     b_hi, #00h
+    mov     b_hi, #01h
     lcall   mul16
     ; reset GPIO
     mov     DPTR, #GPIO_ext
@@ -141,12 +147,10 @@ main:
     mov     A, #08h
 	movx    @DPTR, A
     ; 1 modulo
-    mov     R1, #78h ; a0 (LSB)
-    mov     R2, #56h
-    mov     R3, #34h
-    mov     R4, #12h ; a3 (MSB)
-    mov     m_lo, #34h
-    mov     m_hi, #12h
+    mov     R1, result_0
+    mov     R2, result_1
+    mov     R3, result_2
+    mov     R4, result_3
     lcall   mod32_16_div8
     ; reset GPIO
     mov     DPTR, #GPIO_ext
