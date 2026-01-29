@@ -1,6 +1,9 @@
 import unittest
 from python.bignum import *
 from python.montgomery import *
+import logging
+
+logging.disable(logging.INFO)
 
 class TestDiv(unittest.TestCase):
     def test_div(self):

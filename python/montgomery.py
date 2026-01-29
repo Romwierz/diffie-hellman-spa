@@ -1,4 +1,7 @@
 from utils import get_bits_cnt
+import logging
+
+logging.basicConfig(level=logging.DEBUG, format="%(message)s")
 
 # modulus m must be odd and a,b,n < 2^k
 def mont_pro(a, b, m):
@@ -11,9 +14,9 @@ def mont_pro(a, b, m):
             result += m
         result >>= 1
         a >>= 1
-        # print(i, end=":\n")
-        # print("    result =", hex(result))
-        # print("    a      =", hex(a))
+        logging.debug("index %d:", i)
+        logging.debug("\tresult = %#x", result)
+        logging.debug("\ta = %#x", a)
     if result >= m:
         result -= m
 
@@ -37,7 +40,7 @@ def mod_exp(a, e, m):
         _x = mont_pro(_x, _x, m)
         if e & (1 << i):
             _x = mont_pro(_a, _x, m)
-        print(i, end=":\n")
-        print("    x =", hex(_x))
+        logging.debug("index %d:", i)
+        logging.debug("\tx = %#x", _x)
     
     return mont_convert_out(_x, m)
