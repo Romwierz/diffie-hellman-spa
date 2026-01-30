@@ -35,5 +35,24 @@ class TestDiv(unittest.TestCase):
     def test_modexp_crypto_style(self):
         self.assertEqual(mod_exp(17, 23, 97), 7)
 
+class TestModInv(unittest.TestCase):
+    def test_modular_inverse_k6(self, k=6):
+        for x in range(1, 255, 2):
+            with self.subTest(x=x):
+                inv = mod2k_inv(x, k)
+                self.assertEqual(x*inv % 2**k, 1)
+
+    def test_modular_inverse_k32(self, k=32):
+        for x in range(1, 255, 2):
+            with self.subTest(x=x):
+                inv = mod2k_inv(x, k)
+                self.assertEqual(x*inv % 2**k, 1)
+
+    def test_modular_inverse_k64(self, k=64):
+        for x in range(1, 255, 2):
+            with self.subTest(x=x):
+                inv = mod2k_inv(x, k)
+                self.assertEqual(x*inv % 2**k, 1)
+
 if __name__ == "__main__":
     unittest.main()

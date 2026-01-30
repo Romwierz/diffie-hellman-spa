@@ -44,3 +44,38 @@ def mod_exp(a, e, m):
         logging.debug("\tx = %#x", _x)
     
     return mont_convert_out(_x, m)
+
+def newton_formula(x, y):
+    return y * (2 - y * x)
+
+def mod2k_inv(x, k):
+    '''
+    Calculate the modular inverse 2^k of x.
+
+    The Newton-Raphson method is used that requires x to be odd.
+    The method is about choosing the initial guess value of the inverse y for a certain precision,
+    that is the amount of bits for which y is the inverse of x, and calling the recurrence formula
+    until y converges, meaning it achieves the target precision of k bits.
+    The most basic case is the initial precision of 1 bit, for which the value of the inverse is 1.
+    With each iteration of the Newton formula the precision (number of bits) is doubled.
+    '''
+    assert x & 1 == 1, 'The number to be inverted x is not odd!'
+
+    y = 1
+    bits = 1
+
+    while bits < k:
+        bits *= 2
+        logging.debug("bits = %d:", bits)
+
+        y = newton_formula(x, y)
+        logging.debug("\ty = %d", y)
+
+        # quick modulo^bits by masking the bits of precision
+        mask = (1 << bits) - 1 
+        y &= mask
+        logging.debug("\ty = y mod 2^%d = %d", bits, y)
+
+    logging.debug("\nThe modulo 2^%d of x = %d is:", k, x)
+    logging.debug("\ty = y mod 2^%d = %d", k, y & ((1 << k) - 1))
+    return y & ((1 << k) - 1)
