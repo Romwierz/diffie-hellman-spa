@@ -1,5 +1,5 @@
-from .arithmetic8 import *
-from .utils import *
+from arithmetic8 import *
+from utils import *
 
 def add_bignum(a, b):
     n = max(len(a), len(b))
@@ -43,6 +43,17 @@ def div_bignum(a, b):
             remainder, _ = sub_bignum(remainder, b)
             set_bit(quotient, bit)
     return quotient, remainder
+
+def extended_gcd_bignum(a, b, len):
+    if is_zero(b):
+        return (a, [1], [0])
+    else:
+        d = [0] * len
+        q = [0] * len
+        r = [0] * len
+        q, r = div_bignum(a, b)
+        (d, _x, _y) = extended_gcd_bignum(b, r, len)
+        return (d, _y, sub_bignum(_x, mul_bignum(q, _y)))
 
 def mod_bignum(a, m):
     _, x = div_bignum(a, m)

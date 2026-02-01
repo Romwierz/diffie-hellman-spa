@@ -51,3 +51,6 @@ def subtract(a, b):
 # convert number x into a list of n bytes
 def int_to_bytes_list(x, n):
     return list(x.to_bytes(n, byteorder='little'))
+
+def is_zero(x):
+    return all(v == 0 for v in x)
