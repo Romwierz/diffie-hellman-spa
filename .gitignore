@@ -4,3 +4,4 @@ dispLCD/
 *.uvopt
 *.uvgui.*
 __pycache__/
+*.pdf

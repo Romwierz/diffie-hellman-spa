@@ -1,0 +1,40 @@
+mont-mul:
+    type: Article
+    author:
+        - K. Koc, Cetin
+        - D. Walter, Colin
+    title:
+        value: "Montgomery Multiplication"
+    date: 1998
+    url: https://colinandmargaret.co.uk/Research/Mont_Mult_2ndEd_v4.pdf
+
+mont-mul-ext:
+    type: Article
+    author:
+        - K. Koc, Cetin
+        - Acar, Tolga
+        - S. Kaliski Jr, Burton
+    title:
+        value: "Analyzing and Comparing Montgomery Multiplication Algorithms"
+    date: 1996
+    url: https://scispace.com/pdf/analyzing-and-comparing-montgomery-multiplication-algorithms-2v3u095cel.pdf
+
+at89s52:
+    type: Reference
+    title:
+        value: "AT89S52 8-bit Microcontroller with 8K Bytes In-System Programmable Flash"
+    url: https://eu.mouser.com/datasheet/3/282/1/doc1919.pdf
+
+keil-software:
+    type: Reference
+    # title:
+    #     value: "AT89S52 8-bit Microcontroller with 8K Bytes In-System Programmable Flash"
+    url: https://www.keil.com/demo/eval/c51.htm
+    
+diffie-hellman:
+    type: Web
+    title:
+        value: "Protokół Diffiego-Hellmana"
+    url: https://pl.wikipedia.org/wiki/Protok%C3%B3%C5%82_Diffiego-Hellmana
+    
+
