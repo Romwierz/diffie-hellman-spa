@@ -160,7 +160,7 @@ posiada żadnego złącza umożliwiającego dołączenie rezystora w ten sposób
 się odlutowanie nóżki zasilania mikrokontolera i podłączenie jej do końcówki rezystora, do którego z drugiej
 strony dołączono źródło zasilania (Rys. 2). Dodatkowo pomiędzy źródło zasilania a masę
 układu dołączono równolegle kondensator w celu filtrowania składowej zmiennej zasilania mogącej wpływać na
-stabilność pracy mikrokontrolera.
+stabilność pracy mikrokontrolera. Całość przedstawiono na schemacie blokowym (Rys. 3).
 
 W toku pracy nad projektem korzystano również z wyjść ogólnego przeznaczenia, którymi mikrokontroler sterował w
 celu sygnalizowania operacji (mnożenia lub podnoszenia do kwadratu) wykonywanej w danym momencie.
@@ -168,6 +168,11 @@ celu sygnalizowania operacji (mnożenia lub podnoszenia do kwadratu) wykonywanej
 #figure(
   image("images/pasted_20260130_191112.png", width: 80%),
   caption: [Stanowisko pomiarowe.],
+)
+
+#figure(
+  image("images/pasted_20260205_200816.png", width: 80%),
+  caption: [Schemat połączenia układu pomiarowego.],
 )
 
 = Algorytm
@@ -261,7 +266,7 @@ wartość klucza publicznego, obliczyć wartość dzielonego sekretnego klucza.
 
 Jak wspomniano wcześniej, zaimplementowana wersja mnożenia Montgomery'ego powoduje, że operacje mnożenia i
 podnoszenia do kwadratu stają się technicznie tymi samymi operacjami, więc nie widać pomiędzy nimi różnicy w
-poborze prądu, co przedstawiono na rysunku 3.
+poborze prądu, co przedstawiono na rysunku 4.
 
 #figure(
   image("images/pasted_20260201_173015.png", width: 100%),
@@ -276,7 +281,7 @@ operacji modulo po każdej operacji mnożenia i podnoszenia do kwadratu. W takie
 istnienia zauważalnej różnicy pomiędzy operacjami mnożenia i dzielenia (wzrastającej wraz z rozmiarem
 wielkości liczb ze względu na możliwość pomijania mnożeń przy podnoszeniu do kwadratu), narzut związany z
 działaniem modulo jest tak duży, że przeprowadzenie prostego ataku mocy byłoby niemożliwe. Przypadek ten
-przedstawiono na rysunku 4.
+przedstawiono na rysunku 5.
 
 #figure(
   image("images/pasted_20260201_174916.png", width: 100%),
@@ -285,39 +290,143 @@ przedstawiono na rysunku 4.
   mnożenia, a na kanale CH2 wykonywanie operacji modulo.],
 )
 
+Ze względu na fakt, że ostatecznie nie zdążono zaimplementować odpowiedniej wersji algorytmu Montgomery'ego,
+zdecydowano się uruchomić program z wykorzystaniem funkcji-atrapy liczącej modulo, czyli takiej jej wersji,
+która co prawda nie zwraca poprawnej wersji, ale w porównaniu do prawidłowego algorytm jest na tyle skrócona,
+że umożliwia obserwację różnic pomiędzy operacjami mnożenia i podnoszenia do kwadratu. Dzięki temu możliwe
+jest przekonanie się, jak w rzeczywistości mógłby wyglądać przebieg podatny na prosty atak mocy. Sytuację tę
+przedstawiono na rysunku 6.
+
+#figure(
+  image("images/pasted_20260201_174916.png", width: 100%),
+  caption: [Przebieg napięcia na rezystorze umożliwiający wychwycenie różnic pomiędzy operacjami mnożenia i
+  podnoszenia do kwadratu.  Stan wysoki sygnału zielonego symbolizuje wykonywanie mnożenia, a
+  stan wysoki sygnału niebieskiego wykonywanie operacji modulo.],
+)
+
+#pagebreak()
+= Instrukcja uruchomienia
+
+Poniżej przedstawiono zbiorczą instrukcję do zaprogramowania mikrokontrolera i podłączenia układu pomiarowego.
+
++ Na komputerze z systemem Windows pobrać środowisko _Keil µVision_ @keil-software.
+
++ Podłączyć układ (wraz z sondami osyloskopu) wg. schematu na rysunku 3. Można również zasugerować się
+  rysunkiem 2.
+
++ Podłączyć płytkę laboratoryjną do komputera za pomocą kabla USB, a następnie podłączyć płytkę do zasilania.
+
++ Dla wygody utworzyć folder projektowy np. o nazwie *wbik-spa*, a w środowiku _Keil_ utworzyć nowy projekt
+  (`Project → New µVision Project`), np. pod nazwą *wbik-spa.uvproj* w folderze projektowym, po czym w oknie
+  wyboru urządzenia wyszukać i wybrać AT89S52 [Rys. 7]. W przypadku pojawienia się pytania o przekopiowanie
+  pliku *STARTUP.A51*, wybrać odpowiedź negatywną.
+
++ Dodać wybrany plik źródłowy do projektu (np. *main.asm*). W tym celu należy najpierw otworzyć plik w
+  środowisku (`File → Open`), a następnie dodać go do grupy źródłowej poprzez kliknięcie PPM na _Source Group
+  1_ w oknie _Project_ i wybranie opcji _Add Existing Files to Group 'Source Group 1'_ i wybranie
+  odpowiedniego pliku [Rys. 8].
+
++ Uruchomić kompilację i linkowanie projektu (ikona _Build_; klawisz skrótu _F7_).
+
++ W menedżerze urządzeń systemu Windowds sprawdzić, do którego portu COM zostało przypisane urządzenie.
+
++ W środowisku _Keil_ skonfigurować port COM przypisany do podłączonej płytki. W tym celu należy wybrać z
+  głównego menu `Project → Options for Target → Target 1`, w oknie z ustawieniami wybrać zakładkę _Debug_ i
+  zaznaczyć opcję _Use_, a z listy rozwijanej obok wybrać _Keil Monitor-51 Driver_. Następnie kliknąć przycisk
+  _Settings_ i ustawić odpowiedni port COM [Rys. 9].
+
++ Uruchomić oscyloskop i włączyć kanały 1-3.
+
++ [Polecenie dotyczące ustawienia skal dla sygnałów.]
+
++ W środowisku _Keil_ załadować program poprzez wybranie ikony _Debugging on/off_ i uruchomić go w trybie
+  pracy z pełną prędkością (ikona _Run_; klawisz skrótu _F5_). Może być konieczne kilkukrotne uruchomienie
+  wykonywania programu ze względu na domyślnie ustawiany przez _Monitor firmware_ breakpoint. Przy ładowaniu
+  programu do mikrokontrolera konieczne może być również zresetowanie układu - w tym celu najlepiej
+  przytrzymać przycisk resetu na płytce przez kilka sekund i puścić go w momencie zaakceptowania komunikatu,
+  który pojawia się po kliknięciu ikony _Debugging on/off_.
+
++ Wstrzymać rejestrowanie przebiegu na oscyloskopie i przejść do analizy uzyskanych przebiegów.
+
+Wyjścia GPIO sterowane są według następującego schematu:
+- GPIO1: stan wysoki oznacza wykonywanie podnoszenia do kwadratu;
+- GPIO2: stan wysoki oznacza wykonywanie operacji modulo;
+- GPIO3: stan wysoki oznacza wykonywanie mnożenia.
+
+#figure(
+  image("images/pasted_20260205_163110.png", width: 75%),
+  caption: [Okno wyboru mikrokontrolera.],
+)
+
+#figure(
+  image("images/pasted_20260205_164204.png", width: 65%),
+  caption: [Opcja umożliwiająca dodawanie plików do projektu.],
+)
+
+#figure(
+  image("images/pasted_20260205_165100.png", width: 75%),
+  caption: [Zakładka _Debug_ okna _Options for Target_ oraz okno _Target Setup_ umożliwiające wybór portu COM.],
+)
+
 #pagebreak()
 = Fragmenty kodu
 
 Poniżej przedstawiono najistotniejsze z punktu widzenia działania programu funkcje. Działają one na
-wartościach 16-bitowych.
+wartościach 16-bitowych. W tabeli 1 zamieszczono ich krótkie opisy, a w samym kodzie również zawarte są opisy
+samych funkcji, jak również operacji składowych przez nie wykonywanych.
 
-Funkcja #link(<montgomery_convert_in16>, [`montgomery_convert_in16`]) realizuje konwersję liczby do
-przestrzeni Montgomery'ego (dziedziny n-reszt).
+#figure(
+  table(
+    columns: (auto, 1fr),
+    inset: 10pt,
+    align: horizon,
+    table.header(
+      [*Funkcja*], [*Opis*],
+    ),
+    [ `montgomery_convert_in16` ],
+    [
+      Realizuje konwersję liczby do przestrzeni Montgomery'ego (dziedziny m-reszt).
+    ],
+    [ `montgomery_convert_out16` ],
+    [
+      Realizuje konwersję liczby z przestrzeni Montgomery'ego z powrotem do dziedziny liczb naturalnych.
+    ],
+    [ `montgomery_convert_pro16` ],
+    [
+      Realizuje mnożenie liczb przeniesionych do dziedziny m-reszt za pomocą algorytmu Montgomery'ego.
+    ],
+    [ `montgomery_convert_mul16` ],
+    [
+      Oblicza modulo iloczynu dwóch liczb z dziedziny liczb naturalnych z wykorzystanim powyższych funkcji.
+    ],
+    [ `mod_exp16` ],
+    [
+      To funkcja najwyższego poziomu, która w celu obliczenia wyniku potęgowania modulo wykorzystuje pozostałe
+      funkcje. Zawiera ona również sterowanie wyjściami GPIO w celu sygnalizowania obecnie wykonywanej
+      operacji.
+    ],
+  ),
+  supplement: [Tabela],
+  caption: [Opis najistotniejszych funkcji.],
+  placement: none
+)
 
-Funkcja #link(<montgomery_convert_out16>, [`montgomery_convert_out16`]) realizuje konwersję liczby z
-przestrzeni Montgomery'ego z powrotem do dziedziny liczb naturalnych.
-
-Funkcja #link(<montgomery_pro16>, [`montgomery_pro16`]) realizuje mnożenie liczb przeniesionych do dziedziny
-n-reszt za pomocą algorytmu Montgomery'ego.
-
-Funkcja #link(<montgomery_mul16>, [`montgomery_mul16`]) wykorzystuje powyższe funkcje i oblicza modulo
-iloczynu dwóch liczb z dziedziny liczb naturalnych.
-
-Funkcja #link(<mod_exp16>, [`mod_exp16`]) to funkcja najwyższego poziomu, która w celu obliczenia wyniku
-potęgowania modulo wykorzystuje pozostałe funkcje. Zawiera ona również sterowanie wyjściami GPIO w celu
-sygnalizowania obecnie wykonywanej operacji.
+W celu łatwej identyfikacji liczb przeniesionych do przestrzeni Montgomery'ego (dziedziny m-reszt), zapisywane
+są one z przedrostkiem `_`. Ponadto w opisach funkcji, zmienne wielkoliterowe (np. _A_hi_, _A_lo_) służą do
+opisu ogólnej definicji działania wykonywango przez funkcję, a zmienne małoliterowe (np. _a_hi_, _a_lo_) to
+adresy pamięci.
 
 <montgomery_convert_in16>
 ```asm
 ;-----------------------------------------
-; Convert a 16-bit value into Montgomery's space.
-; A * R mod M, where R = 2^k and k - n_bits of M
-; In:   R4:R3:R2:R1 = 0:0:a_hi:a_lo
+; Przekształć liczbę 16-bitową do przestrzeni Montgomery'ego (dziedziny m-reszt).
+; A * R mod M, gdzie R = 2^k i k - liczba bitów liczby M
+; In:   R4:R3:R2:R1 = 0:0:A_hi:A_lo
 ;       m_hi:m_lo
-; Out:  R2:R1 = _(a_hi:a_lo)
+; Out:  R2:R1 = _(A_hi:A_lo)
 ;-----------------------------------------
 montgomery_convert_in16:
-    ; get bit count of modulus into R7
+    ; zapisz liczbę bitów modułu do R7
     push    1
     push    2
     mov     R1, m_lo
@@ -348,21 +457,20 @@ montgomery_convert_in16:
     mov     R2, rem_hi
 
     ret
-
 ```
 
 <montgomery_convert_out16>
 ```asm
 ;-----------------------------------------
-; Convert a 16-bit value out of Montgomery's space.
-; In:   R2:R1 = _(a_hi:a_lo)
+; Przekształć liczbę 16-bitową z przestrzeni Montgomery'ego do przestrzeni liczb naturalnych.
+; In:   R2:R1 = _(A_hi:A_lo)
 ;       m_hi:m_lo
-; Out:  R2:R1 = a_hi:a_lo
+; Out:  R2:R1 = A_hi:A_lo
 ;-----------------------------------------
-; Note:
-; Montgomery conversion preserves values modulo M.
-; convert_out(convert_in(a)) returns (a mod M),
-; not the original integer if a >= M.
+; Uwaga:
+; Przekształcenie Montgomery'ego zachowuje wartości modulo M.
+; Z tego powodu wywołanie convert_out(convert_in(a)) zwróci wartość a mod M,
+; a nie oryginalną wartość liczby, jeśli jest ona większa-równa od M (a >= M).
 ;-----------------------------------------
 montgomery_convert_out16:
     mov     a_lo, R1
@@ -379,11 +487,11 @@ montgomery_convert_out16:
 <montgomery_pro16>
 ```asm
 ; ---------------------------------------------------------
-; Calculate the Montgomery product of the M-residues of two numbers.
+; Oblicz iloczyn Montgomery'ego dwóch liczb 16-bitowych przekstałconych do dziedziny m-reszt.
 ; _U = _A * _B * R⁻¹ (mod M)
-; In:   a_hi:a_lo }
-;       b_hi:b_lo } RAM addresses
-;       m_hi:m_lo }
+; In:   a_hi:a_lo
+;       b_hi:b_lo
+;       m_hi:m_lo
 ; Out:  result_1:result_0 = _U
 ; ---------------------------------------------------------
 montgomery_pro16:
@@ -395,12 +503,12 @@ montgomery_pro16:
     push    5
     push    7
 
-    ; initialize result with 0
+    ; przypisz do wyniku wartość początkową 0
     mov     result_0, #0
     mov     result_1, #0
     mov     result_2, #0
 
-    ; get bit count of modulus into R7
+    ; zapisz liczbę bitów modułu do R7
     push    1
     push    2
     mov     R1, m_lo
@@ -455,7 +563,7 @@ montgomery_pro16:
     ; -------------
     mov     R0, result_0
     mov     R1, result_1
-    ; shift bit17 into bit16 and bit16 into result_1
+    ; przesuń bit17 na bit16 i bit16 do starszego bajtu wyniku (result_1)
     clr     C
     mov     A, result_2
     rrc     A
@@ -473,7 +581,7 @@ montgomery_pro16:
     mov     a_lo, R0
     mov     a_hi, R1
 
-    clr     C ; clear Carry after each iteration
+    clr     C ; wyczyść flagę Carry po każdej iteracji
     djnz    R7, mont_loop
 
     ; if result >= M then result -= M
@@ -485,7 +593,7 @@ montgomery_pro16:
     lcall   cmp16_ge
     jz      montgomery_pro16_done
 
-    lcall   sub16 ; final result in in R5:R4
+    lcall   sub16 ; końcowy wynik w R5:R4
     mov     result_0, R4
     mov     result_1, R5
 
@@ -503,26 +611,26 @@ montgomery_pro16:
 <montgomery_mul16>
 ```asm
 ; ---------------------------------------------------------
-; Calculate the product of two 16-bit numbers modulo M using Montgomery reduction algorithm.
+; Oblicz iloczyn dwóch liczb 16-bitowych modulo M wykorzystując algorytm Montgomery'ego.
 ; U = A * B (mod M)
-; In:   R2:R1 = a_hi:a_lo
-;       R4:R3 = b_hi:b_lo
+; In:   R2:R1 = A_hi:A_lo
+;       R4:R3 = B_hi:B_lo
 ;       m_hi:m_lo
-; Out:  R6:R5 = u_hi:u_lo
+; Out:  R6:R5 = U_hi:U_lo
 ;-----------------------------------------
-; Important note:
-; The Montgomery reduction algorithm requires that R and M be relatively prime,
-; i.e., gcd(R, M) = gcd(2^k, M) = 1. This requirement is satisfied if n is odd.
+; Uwaga:
+; Algorytm Montgomery'ego wymaga, aby R i M były względnie pierwsze,
+; tj. nwd(R, M) = nwd(2^k, M) = 1. Warunek jest spełniony, jeśli n jest nieparzyste.
 ;-----------------------------------------
 montgomery_mul16:
-    ; convert A into Montgomery representation -> R2:R1 = _A
+    ; przenieś A do dziedziny m-reszt i zapisz do R2:R1 (R2:R1 = _A)
     push    3
     push    4
     lcall   montgomery_convert_in16
     pop     4
     pop     3
 
-    ; convert B into Montgomery representation -> R4:R3 = _B
+    ; przenieś B do dziedziny m-reszt i zapisz do R4:R3 (R4:R3 = _B)
     push    1
     push    2
     mov     A, R3
@@ -549,7 +657,7 @@ montgomery_mul16:
     lcall   montgomery_pro16
 
     ; _U -> U
-    ; convert _U out of Montgomery representation -> R6:R5 = U
+    ; przenieś _U do dziedziny liczb naturalnych i zapisz do R6:R5 (R6:R5 = U)
     push    1
     push    2
     mov     R1, result_0
@@ -568,15 +676,15 @@ montgomery_mul16:
 <mod_exp16>
 ```asm
 ; ---------------------------------------------------------
-; Calculate the modular exponentiation of a 16-bit value (where exponent and modulus are also 16-bit values).
+; Oblicz potęgę modulo liczby 16-bitowej (gdzie wykładnik i moduł również są 16-bitowe).
 ; X = A^e mod M
-; In:   R2:R1 = a_hi:a_lo
-;       R4:R3 = e_hi:e_lo
+; In:   R2:R1 = A_hi:A_lo
+;       R4:R3 = E_hi:E_lo
 ;       m_hi:m_lo
-; Out:  R6:R5 = x_hi:x_lo
+; Out:  R6:R5 = X_hi:X_lo
 ;-----------------------------------------
 mod_exp16:
-    ; set ext GPIO0 high
+    ; ustaw stan wysoki na GPIO0
     mov     DPTR, #GPIO_ext
     mov     A, #01h
     movx    @DPTR, A
@@ -624,7 +732,7 @@ mod_exp16:
     ; 4) square and multiply loop
     ; -----------------------
     mod_exp_loop:
-    ; set ext GPIO0-2 high
+    ; ustaw stan wysoki na GPIO0-2
     mov     DPTR, #GPIO_ext
     mov     A, #07h
     movx    @DPTR, A
@@ -639,12 +747,12 @@ mod_exp16:
     mov     x_lo, result_0
     mov     x_hi, result_1
 
-    ; set ext GPIO2 low and keep GPIO0-1 high
+    ; ustaw stan niski na GPIO2 i utrzymaj stan wysoki na GPIO0-1
     mov     DPTR, #GPIO_ext
     mov     A, #03h
     movx    @DPTR, A
 
-    ; check exponent bit
+    ; sprawdź bit wykładnika
     push    1
     push    2
     mov     A, R3
@@ -658,7 +766,7 @@ mod_exp16:
     pop     1
     jz      skip_mul_a
 
-    ; set ext GPIO3 high and keep GPIO0-1 high
+    ; ustaw stan wysoki na GPIO3 i utrzymaj stan wysoki na GPIO0-1
     mov     DPTR, #GPIO_ext
     mov     A, #0Bh
     movx    @DPTR, A
@@ -673,7 +781,7 @@ mod_exp16:
     mov     x_lo, result_0
     mov     x_hi, result_1
 
-    ; set ext GPIO1,3 low and keep GPIO0 high
+    ; ustaw stan niski na GPIO1,3 i utrzymaj stan wysoki na GPIO0
     mov     DPTR, #GPIO_ext
     mov     A, #01h
     movx    @DPTR, A
@@ -699,7 +807,7 @@ mod_exp16:
     mov     R5, x_lo
     mov     R6, x_hi
 
-    ; set ext GPIO0-1 low
+    ; ustaw stan niski na GPIO0-1
     mov     DPTR, #GPIO_ext
     mov     A, #0
     movx    @DPTR, A
