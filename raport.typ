@@ -166,7 +166,7 @@ W toku pracy nad projektem korzystano również z wyjść ogólnego przeznacze
 celu sygnalizowania operacji (mnożenia lub podnoszenia do kwadratu) wykonywanej w danym momencie.
 
 #figure(
-  image("images/pasted_20260130_191112.png", width: 80%),
+  image("images/pasted_20260206_201318.png", width: 80%),
   caption: [Stanowisko pomiarowe.],
 )
 
@@ -268,13 +268,6 @@ Jak wspomniano wcześniej, zaimplementowana wersja mnożenia Montgomery'ego powo
 podnoszenia do kwadratu stają się technicznie tymi samymi operacjami, więc nie widać pomiędzy nimi różnicy w
 poborze prądu, co przedstawiono na rysunku 4.
 
-#figure(
-  image("images/pasted_20260201_173015.png", width: 100%),
-  caption: [Wizualizacja poboru prądu (jako spadek napięcia na rezystorze) dla różnych operacji w przypadku
-  zaimplementowanej wersji algorytmu Montgomery'ego. Stan wysoki sygnału niebieskiego oznacza wykonywanie
-  podnoszenia do kwadratu, a stan niski oznacza wykonywanie mnożenia.],
-)
-
 W toku pracy nad projektem sprawdzono również wersję przeprowadzania algorytmu kryptograficznego bez
 korzystania z algorytmu Montgomery'ego. W porównaniu do algorytmu Montgomery'ego, wymaga to przeprowadzania
 operacji modulo po każdej operacji mnożenia i podnoszenia do kwadratu. W takiej sytuacji, nawet w przypadku
@@ -282,13 +275,6 @@ istnienia zauważalnej różnicy pomiędzy operacjami mnożenia i dzielenia (wzr
 wielkości liczb ze względu na możliwość pomijania mnożeń przy podnoszeniu do kwadratu), narzut związany z
 działaniem modulo jest tak duży, że przeprowadzenie prostego ataku mocy byłoby niemożliwe. Przypadek ten
 przedstawiono na rysunku 5.
-
-#figure(
-  image("images/pasted_20260201_174916.png", width: 100%),
-  caption: [Porównanie czasu trwania standardowej  operacji mnożenia (tj. wykorzystującej
-  sprzętową instrukcję mnożącą) i operacji modulo. Stan wysoki sygnału na kanale CH1 symbolizuje wykonywanie
-  mnożenia, a na kanale CH2 wykonywanie operacji modulo.],
-)
 
 Ze względu na fakt, że ostatecznie nie zdążono zaimplementować odpowiedniej wersji algorytmu Montgomery'ego,
 zdecydowano się uruchomić program z wykorzystaniem funkcji-atrapy liczącej modulo, czyli takiej jej wersji,
@@ -298,13 +284,33 @@ jest przekonanie się, jak w rzeczywistości mógłby wyglądać przebieg podat
 przedstawiono na rysunku 6.
 
 Na rysunkach 7-9 przedstawiono również różnice pomiędzy tymi samymi operacjami wykonywanymi z różnymi danymi
-wejściowymi.
+wejściowymi. Operacje podnoszenia do kwadratu (sygnał zielony) i mnożenia (sygnał niebieski) wykonywane
+są naprzemiennie, a pomiędzy nimi wykonywana jest funkcja-atrapa licząca modulo.
 
-Na rysunkach 10-13 przedstawiono przebieg spadku napięcie i jego mniejsze fragmenty w przypadku wykonywania
-operacji potęgowania modulo dla wykładnika wynoszącego `0x16`.
+Na rysunkach 10-13 przedstawiono przebieg spadku napięcia i jego mniejsze fragmenty w przypadku wykonywania
+operacji potęgowania modulo dla wykładnika wynoszącego `0x16`. W algorytmie bity przetwatwarzane są od
+najstarszego bitu o wartości 1 do bitu najmłodszego. Wartym zaznaczenia jest fakt, że w przeciwieństwie do
+przebiegów na rysunkach 7-9, w czas trwania stanów wysokich sygnałów zielonego i niebieskiego, oprócz
+podnoszenia do kwadratu i mnożenia, wliczona jest również operacja modulo. Na rysunku 14 dodano oznaczenia
+wartości bitów dla całego przebiegu, a na rysunku 15 zaznaczono momenty wykonywania operacji modulo.
 
 #figure(
-  image("images/squ-mod-mul-mod-loop.png", width: 85%),
+  image("images/pasted_20260201_173015.png", width: 85%),
+  caption: [Wizualizacja poboru prądu (jako spadek napięcia na rezystorze) dla różnych operacji w przypadku
+  zaimplementowanej wersji algorytmu Montgomery'ego. Stan wysoki sygnału niebieskiego oznacza wykonywanie
+  podnoszenia do kwadratu, a stan niski oznacza wykonywanie mnożenia.],
+  placement: none
+)
+
+#figure(
+  image("images/pasted_20260201_174916.png", width: 85%),
+  caption: [Porównanie czasu trwania standardowej  operacji mnożenia (tj. wykorzystującej
+  sprzętową instrukcję mnożącą) i operacji modulo. Stan wysoki sygnału na kanale CH1 symbolizuje wykonywanie
+  mnożenia, a na kanale CH2 wykonywanie operacji modulo.],
+)
+
+#figure(
+  image("images/squ-mod-mul-mod-loop.png", width: 83%),
   caption: [Przebieg napięcia na rezystorze umożliwiający wychwycenie różnic pomiędzy operacjami mnożenia i
   podnoszenia do kwadratu.  Stan wysoki sygnału zielonego symbolizuje wykonywanie podnoszenia do kwadratu, a
   stan wysoki sygnału niebieskiego wykonywanie mnożenia, a stan wysoki sygnału różowego symbolizuje
@@ -312,19 +318,21 @@ operacji potęgowania modulo dla wykładnika wynoszącego `0x16`.
 )
 
 #figure(
-  image("images/diff-squ-data.png", width: 85%),
-  caption: [Różnica pomiędzy kolejnymi operacjami podnoszenia do kwadratu z różnymi danymi wejściowymi.],
+  image("images/diff-squ-data.png", width: 83%),
+  caption: [Różnica pomiędzy kolejnymi operacjami podnoszenia do kwadratu (stan wysoki sygnału zielonego) z
+  różnymi danymi wejściowymi.],
 )
 
 #figure(
   image("images/diff-mul-data.png", width: 85%),
-  caption: [Różnica pomiędzy kolejnymi operacjami mnożenia z różnymi danymi wejściowymi.],
+  caption: [Różnica pomiędzy kolejnymi operacjami mnożenia (stan wysoki sygnału niebieskiego) z różnymi danymi
+  wejściowymi.],
 )
 
 #figure(
   image("images/squ-vs-mul.png", width: 85%),
-  caption: [Różnica pomiędzy kolejną parą operacji podnoszenia do kwadratu + mnożenia z różnymi danymi
-  wejściowymi.],
+  caption: [Różnica pomiędzy kolejną parą operacji podnoszenia do kwadratu (stan wysoki sygnału zielonego) +
+  mnożenia (stan wysoki sygnału niebieskiego) z różnymi danymi wejściowymi.],
 )
 
 #figure(
@@ -334,16 +342,27 @@ operacji potęgowania modulo dla wykładnika wynoszącego `0x16`.
 
 #figure(
   image("images/exp-0x16-hi5bits.png", width: 85%),
-  caption: [Przebieg dla pięciu starszych bitów w przypadku wykładnika wynoszącego 0x16.],
+  caption: [Przebieg dla pięciu starszych bitów wykładnika wynoszącego 0x16.],
 )
 
 #figure(
   image("images/exp-0x16-lo5bits.png", width: 85%),
-  caption: [Przebieg dla pięciu młodszych bitów w przypadku wykładnika wynoszącego 0x16.],
+  caption: [Przebieg dla pięciu młodszych bitów wykładnika wynoszącego 0x16.],
 )
 
 #figure(
   image("images/exp-0x16-single-hi.png", width: 85%),
+  caption: [Przebieg dla pojedynczego bitu wynoszącego 1, czyli momentu wykonywania podnoszenia do kwadratu +
+  mnożenia.],
+)
+
+#figure(
+  image("images/exp-0x16-view-labels.png", width: 85%),
+  caption: [Cały przebieg w przypadku wykładnika wynoszącego 0x16 z oznaczeniami wartości bitów.],
+)
+
+#figure(
+  image("images/exp-0x16-single-hi-label.png", width: 85%),
   caption: [Przebieg dla pojedynczego bitu wynoszącego 1, czyli momentu wykonywania podnoszenia do kwadratu +
   mnożenia.],
 )
@@ -362,13 +381,13 @@ Poniżej przedstawiono zbiorczą instrukcję do zaprogramowania mikrokontrolera 
 
 + Dla wygody utworzyć folder projektowy np. o nazwie *wbik-spa*, a w środowiku _Keil_ utworzyć nowy projekt
   (`Project → New µVision Project`), np. pod nazwą *wbik-spa.uvproj* w folderze projektowym, po czym w oknie
-  wyboru urządzenia wyszukać i wybrać AT89S52 [Rys. 7]. W przypadku pojawienia się pytania o przekopiowanie
+  wyboru urządzenia wyszukać i wybrać AT89S52 [Rys. 16]. W przypadku pojawienia się pytania o przekopiowanie
   pliku *STARTUP.A51*, wybrać odpowiedź negatywną.
 
 + Dodać wybrany plik źródłowy do projektu (np. *main.asm*). W tym celu należy najpierw otworzyć plik w
   środowisku (`File → Open`), a następnie dodać go do grupy źródłowej poprzez kliknięcie PPM na _Source Group
   1_ w oknie _Project_ i wybranie opcji _Add Existing Files to Group 'Source Group 1'_ i wybranie
-  odpowiedniego pliku [Rys. 8].
+  odpowiedniego pliku [Rys. 17].
 
 + Uruchomić kompilację i linkowanie projektu (ikona _Build_; klawisz skrótu _F7_).
 
@@ -377,9 +396,7 @@ Poniżej przedstawiono zbiorczą instrukcję do zaprogramowania mikrokontrolera 
 + W środowisku _Keil_ skonfigurować port COM przypisany do podłączonej płytki. W tym celu należy wybrać z
   głównego menu `Project → Options for Target → Target 1`, w oknie z ustawieniami wybrać zakładkę _Debug_ i
   zaznaczyć opcję _Use_, a z listy rozwijanej obok wybrać _Keil Monitor-51 Driver_. Następnie kliknąć przycisk
-  _Settings_ i ustawić odpowiedni port COM [Rys. 9].
-
-+ Uruchomić oscyloskop i włączyć kanały 1-3.
+  _Settings_ i ustawić odpowiedni port COM [Rys. 18].
 
 + [Polecenie dotyczące ustawienia skal dla sygnałów.]
 
