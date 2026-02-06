@@ -74,6 +74,9 @@
     tmp_lo      EQU 61h
     tmp_hi      EQU 62h
 
+    e_lo        EQU 63h
+    e_hi        EQU 64h
+
 main:
     ; initialize ASSERT counter
     mov     assert_cnt, #0
@@ -85,6 +88,17 @@ main:
     ; set modulus
     mov     m_lo, #34h
     mov     m_hi, #12h
+
+    mock_mod_exp_loop:
+    mov     a_lo, #27h
+    mov     a_hi, #04h
+    mov     e_lo, #06h
+    mov     e_hi, #01h
+    mov     m_lo, #05h
+    mov     m_hi, #01h
+    lcall   mock_mod_exp16
+
+    jmp     mock_mod_exp_loop
 
     main_loop:
     ; ------------------------
@@ -277,6 +291,9 @@ mul16:
 ; Out:  R6:R5:R4:R3
 ;-----------------------------------------
 square16:
+    push    0
+    push    7
+
    ; clear result
     mov     R3, #0
     mov     R4, #0
@@ -341,6 +358,9 @@ square16:
     mov     A, R6
     addc    A, #0
     mov     R6, A
+
+    pop     7
+    pop     0
 
     ret
 
@@ -979,6 +999,109 @@ mod_exp16:
     mov     DPTR, #GPIO_ext
     mov     A, #0
 	movx    @DPTR, A
+
+    ret
+
+; ---------------------------------------------------------
+; Calculate the modular exponentiation of a 16-bit value (where exponent and modulus are also 16-bit values).
+; X = A^e mod M
+; In:   a_hi:a_lo
+;       e_hi:e_lo
+;       m_hi:m_lo
+; Out:  R6:R5 = x_hi:x_lo
+;-----------------------------------------
+mock_mod_exp16:
+    ; reset ext GPIOs
+    mov     DPTR, #GPIO_ext
+    mov     A, #00h
+	movx    @DPTR, A
+
+    mov     x_lo, #1
+    mov     x_hi, #1
+
+    ; n_bits = get_bits_cnt(e)
+    ; -----------------------
+    push    1
+    push    2
+    mov     A, e_lo
+    mov     R1, A
+    mov     A, e_hi
+    mov     R2, A
+    lcall   get_bit_cnt16
+    pop     2
+    pop     1
+    mov     R7, A
+    jz      modexp_exp_zero
+
+    ; SQUARE-AND-MUL LOOP
+    ; -----------------------
+    mod_exp_loop1:
+    ; set ext GPIO1,3 high
+    mov     DPTR, #GPIO_ext
+    mov     A, #0Ah
+	movx    @DPTR, A
+
+    ; SQUARE
+    ; -----------------------
+    mov     R1, x_lo
+    mov     R2, x_hi
+    lcall   square16
+    ; modulo
+    mov     R1, 3 ; a0 (LSB)
+    mov     R2, 4 ; a1
+    mov     R3, 5 ; a2
+    mov     R4, 6 ; a3 (MSB)
+    lcall   mod32_16_div8
+    mov     x_lo, rem_lo
+    mov     x_hi, rem_hi
+
+    ; set ext GPIO1 low and keep GPIO3 high
+    mov     DPTR, #GPIO_ext
+    mov     A, #08h
+	movx    @DPTR, A
+
+    ; check exponent bit
+    push    1
+    push    2
+    mov     A, e_lo
+    mov     R1, A
+    mov     A, e_hi
+    mov     R2, A
+    mov     A, R7
+    dec     A
+    lcall   get_bit32
+    pop     2
+    pop     1
+    jz      skip_mul_a1
+
+    ; set ext GPIO2 high and keep GPIO3 high
+    mov     DPTR, #GPIO_ext
+    mov     A, #0Ch
+	movx    @DPTR, A
+
+    ;_MULTIPLY
+    ; -----------------------
+    ; mov     a_lo, rem_lo
+    ; mov     a_hi, rem_hi
+    mov     b_lo, x_lo
+    mov     b_hi, x_hi
+    lcall   mul16
+    ; modulo
+    mov     R1, 3 ; a0 (LSB)
+    mov     R2, 4 ; a1
+    mov     R3, 5 ; a2
+    mov     R4, 6 ; a3 (MSB)
+    lcall   mod32_16_div8
+    mov     x_lo, rem_lo
+    mov     x_hi, rem_hi
+
+    ; set ext GPIO2,3 low
+    mov     DPTR, #GPIO_ext
+    mov     A, #01h
+	movx    @DPTR, A
+
+    skip_mul_a1:
+    djnz    R7, mod_exp_loop1
 
     ret
 
