@@ -297,11 +297,55 @@ która co prawda nie zwraca poprawnej wersji, ale w porównaniu do prawidłowego
 jest przekonanie się, jak w rzeczywistości mógłby wyglądać przebieg podatny na prosty atak mocy. Sytuację tę
 przedstawiono na rysunku 6.
 
+Na rysunkach 7-9 przedstawiono również różnice pomiędzy tymi samymi operacjami wykonywanymi z różnymi danymi
+wejściowymi.
+
+Na rysunkach 10-13 przedstawiono przebieg spadku napięcie i jego mniejsze fragmenty w przypadku wykonywania
+operacji potęgowania modulo dla wykładnika wynoszącego `0x16`.
+
 #figure(
-  image("images/pasted_20260201_174916.png", width: 100%),
+  image("images/squ-mod-mul-mod-loop.png", width: 85%),
   caption: [Przebieg napięcia na rezystorze umożliwiający wychwycenie różnic pomiędzy operacjami mnożenia i
-  podnoszenia do kwadratu.  Stan wysoki sygnału zielonego symbolizuje wykonywanie mnożenia, a
-  stan wysoki sygnału niebieskiego wykonywanie operacji modulo.],
+  podnoszenia do kwadratu.  Stan wysoki sygnału zielonego symbolizuje wykonywanie podnoszenia do kwadratu, a
+  stan wysoki sygnału niebieskiego wykonywanie mnożenia, a stan wysoki sygnału różowego symbolizuje
+  operację modulo.],
+)
+
+#figure(
+  image("images/diff-squ-data.png", width: 85%),
+  caption: [Różnica pomiędzy kolejnymi operacjami podnoszenia do kwadratu z różnymi danymi wejściowymi.],
+)
+
+#figure(
+  image("images/diff-mul-data.png", width: 85%),
+  caption: [Różnica pomiędzy kolejnymi operacjami mnożenia z różnymi danymi wejściowymi.],
+)
+
+#figure(
+  image("images/squ-vs-mul.png", width: 85%),
+  caption: [Różnica pomiędzy kolejną parą operacji podnoszenia do kwadratu + mnożenia z różnymi danymi
+  wejściowymi.],
+)
+
+#figure(
+  image("images/exp-0x16-view.png", width: 85%),
+  caption: [Cały przebieg w przypadku wykładnika wynoszącego 0x16.],
+)
+
+#figure(
+  image("images/exp-0x16-hi5bits.png", width: 85%),
+  caption: [Przebieg dla pięciu starszych bitów w przypadku wykładnika wynoszącego 0x16.],
+)
+
+#figure(
+  image("images/exp-0x16-lo5bits.png", width: 85%),
+  caption: [Przebieg dla pięciu młodszych bitów w przypadku wykładnika wynoszącego 0x16.],
+)
+
+#figure(
+  image("images/exp-0x16-single-hi.png", width: 85%),
+  caption: [Przebieg dla pojedynczego bitu wynoszącego 1, czyli momentu wykonywania podnoszenia do kwadratu +
+  mnożenia.],
 )
 
 #pagebreak()
